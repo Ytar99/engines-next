@@ -64,6 +64,60 @@ export async function createUser(prevState, formData) {
   return { error: false, message: "Успех!" };
 }
 
+export async function editUser(prevState, formData) {
+  const fields = {
+    id: formData.get("id"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    password_confirm: formData.get("password_confirm"),
+    role: formData.get("role"),
+    enabled: Boolean(formData.get("enabled") || false),
+    firstname: formData.get("firstname"),
+    lastname: formData.get("lastname"),
+    phone: formData.get("phone"),
+  };
+
+  if (!fields.email) {
+    return { error: true, message: "Заполните все обязательные поля" };
+  }
+
+  if (fields?.password !== fields?.password_confirm) {
+    return { error: true, message: "Пароли не совпадают" };
+  }
+
+  if (fields?.phone && !validatePhone(fields?.phone)) {
+    return { error: true, message: "Неверный формат телефона, пример: XXXXXXXXXX (10 цифр)" };
+  }
+
+  if (!validateEmail(fields?.email)) {
+    return { error: true, message: "Неверный формат электронной почты" };
+  }
+
+  const userExist = await prisma.user.findUnique({
+    where: { email: fields.email },
+  });
+
+  const isUserExists = Boolean(userExist);
+
+  if (isUserExists && userExist.id !== parseInt(fields.id)) {
+    return { error: true, message: "Пользователь с таким email уже существует" };
+  }
+
+  const hashedPassword = await bcrypt.hash(fields.password, 10);
+
+  fields.password = hashedPassword;
+  delete fields.password_confirm;
+  delete fields.id;
+
+  const user = await prisma.user.update({ data: fields, where: { email: fields.email } });
+
+  if (!user) {
+    return { error: true, message: "Произошла ошибка при обновлении пользователя" };
+  }
+
+  return { error: false, message: "Успех!" };
+}
+
 export async function deleteUser(prevState, formData) {
   const userId = formData.get("userId");
 
