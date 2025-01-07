@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// enum UserRole {
+//   USER
+//   ADMIN
+// }
+
+// enum OrderStatus {
+//   PROCESSING
+//   CANCELLED
+//   COMPLETED
+// }
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      String
+  enabled   Boolean  @default(true)
+  firstname String?
+  lastname  String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  firstname String?
+  lastname  String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model Order {
+  id         Int            @id @default(autoincrement())
+  customerId Int
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  status     String
+  customer   Customer       @relation(fields: [customerId], references: [id])
+  products   OrderProduct[]
+}
+
+model Engine {
+  id       Int       @id @default(autoincrement())
+  name     String
+  products Product[]
+}
+
+model Product {
+  id            Int            @id @default(autoincrement())
+  article       String
+  name          String
+  description   String?
+  price         Float
+  count         Int            @default(0)
+  engineId      Int?
+  img           String?
+  engine        Engine?        @relation(fields: [engineId], references: [id])
+  orderProducts OrderProduct[]
+}
+
+model OrderProduct {
+  orderId   Int
+  productId Int
+  count     Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@id([orderId, productId])
+}
