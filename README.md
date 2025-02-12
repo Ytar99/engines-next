@@ -12,7 +12,7 @@
 ### 1. Клонирование репозитория
 
 ```bash
-git https://github.com/Ytar99/engines-next.git
+git clone https://github.com/Ytar99/engines-next.git
 cd engines-next
 ```
 
