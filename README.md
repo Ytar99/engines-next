@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Engines Next.js
 
-## Getting Started
+Информационная система для ВКР.
 
-First, run the development server:
+## 📋 Требования
+
+- Node.js v22.14 (рекомендуется использовать [nvm](https://github.com/nvm-sh/nvm))
+- npm (обычно устанавливается вместе с Node.js)
+
+## 🚀 Быстрый старт
+
+### 1. Клонирование репозитория
+
+```bash
+git https://github.com/Ytar99/engines-next.git
+cd engines-next
+```
+
+### 2. Установка зависимостей
+
+```bash
+nvm install 22.14    # Установка нужной версии Node.js
+nvm use 22.14        # Активация версии
+npm install
+```
+
+### 3. Настройка окружения
+
+1. Создайте файл `.env` на основе примера:
+
+```bash
+cp dev.env .env
+```
+
+2. Заполните все необходимые переменные в `.env` (база данных, секретные ключи и т.д.)
+
+### 4. Инициализация базы данных
+
+```bash
+npm run migrate      # Запуск миграций
+```
+
+### 5. Создание администратора
+
+```bash
+npm run seed         # Создание тестовых данных/администратора
+```
+
+После выполнения проверьте консоль — там могут появиться учётные данные для входа.
+
+### 6. Запуск проекта
+
+Для разработки (с hot-reload):
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Для production:
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```bash
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Приложение будет доступно по адресу: [http://localhost:3000](http://localhost:3000)
 
-## Learn More
+## ⚙️ Дополнительные команды
 
-To learn more about Next.js, take a look at the following resources:
+- `npm run lint` — проверка кода линтером
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔧 Если возникли проблемы
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Убедитесь, что используется Node.js версии 22.14
+- Проверьте подключение к базе данных в `.env`
+- Убедитесь, что все миграции выполнены успешно
