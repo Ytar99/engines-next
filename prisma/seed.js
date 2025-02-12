@@ -1,8 +1,9 @@
 require("dotenv").config();
-
-const { USER_ROLES } = require("@/app/_constants");
-const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcrypt");
+const { PrismaClient } = require("@prisma/client");
+
+const constantsPath = require("path").resolve("./app/_constants");
+const { USER_ROLES } = require(constantsPath);
 
 const prisma = new PrismaClient();
 
