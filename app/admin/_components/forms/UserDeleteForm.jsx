@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { deleteUser } from "@/app/_actions/userActions";
 import LoadingOverlay from "@/app/_components/loadingOverlay";
 
-function DeleteUserForm(props) {
+function UserDeleteForm(props) {
   const { userId } = props;
 
   const [state, formAction, pending] = useActionState(deleteUser, null);
@@ -36,4 +36,4 @@ function DeleteUserForm(props) {
   );
 }
 
-export default DeleteUserForm;
+export default UserDeleteForm;

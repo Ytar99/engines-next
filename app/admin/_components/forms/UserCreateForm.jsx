@@ -7,20 +7,9 @@ import { redirect } from "next/navigation";
 import { createUser } from "@/app/_actions/userActions";
 import LoadingOverlay from "@/app/_components/loadingOverlay";
 
-import styles from "./CreateUserForm.module.css";
 import { USER_ROLES } from "@/app/_constants";
 
-const initialState = {
-  email: "",
-  password: "",
-  password_confirm: "",
-  role: USER_ROLES.USER,
-  firstname: "",
-  lastname: "",
-  phone: "",
-};
-
-function CreateUserForm() {
+function UserCreateForm() {
   const [state, formAction, pending] = useActionState(createUser, null);
 
   useEffect(() => {
@@ -33,7 +22,7 @@ function CreateUserForm() {
   }, [state]);
 
   return (
-    <form className={styles.form} action={formAction}>
+    <form styles={{ position: "relative" }} action={formAction}>
       {pending && <LoadingOverlay fullscreen />}
 
       <input type="hidden" name="enabled" value="true" />
@@ -84,4 +73,4 @@ function CreateUserForm() {
   );
 }
 
-export default CreateUserForm;
+export default UserCreateForm;

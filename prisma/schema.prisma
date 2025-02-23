@@ -57,13 +57,13 @@ model Order {
 
 model Engine {
   id       Int       @id @default(autoincrement())
-  name     String
+  name     String    @unique
   products Product[]
 }
 
 model Product {
   id            Int            @id @default(autoincrement())
-  article       String
+  article       String         @unique
   name          String
   description   String?
   price         Float

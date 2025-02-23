@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 import Link from "next/link";
 
 import prisma from "@/lib/prisma";
-import EditUserForm from "@/app/admin/_components/forms/EditUserForm";
+import UserEditForm from "@/app/admin/_components/forms/UserEditForm";
 
 async function UserEditPage({ params }) {
   const userId = (await params).id;
@@ -14,7 +14,7 @@ async function UserEditPage({ params }) {
       <h1>Редактирование пользователя</h1>
 
       <Suspense fallback={<div>Загрузка...</div>}>
-        <EditUserForm user={user} />
+        <UserEditForm user={user} />
       </Suspense>
 
       <hr />

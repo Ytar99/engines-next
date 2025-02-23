@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import prisma from "@/lib/prisma";
-import DeleteUserForm from "@/app/admin/_components/forms/DeleteUserForm";
+import UserDeleteForm from "@/app/admin/_components/forms/UserDeleteForm";
 
 async function UserDeletePage({ params }) {
   const userId = (await params).id;
@@ -25,7 +25,7 @@ async function UserDeletePage({ params }) {
       <p>Вы действительно хотите удалить пользователя {user?.email}?</p>
 
       <Suspense fallback={!user?.email}>
-        <DeleteUserForm userId={userId} />
+        <UserDeleteForm userId={userId} />
       </Suspense>
 
       <hr />

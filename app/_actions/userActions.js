@@ -16,14 +16,14 @@ function validateEmail(email) {
 
 export async function createUser(prevState, formData) {
   const fields = {
-    email: formData.get("email"),
-    password: formData.get("password"),
-    password_confirm: formData.get("password_confirm"),
+    email: formData.get("email")?.trim(),
+    password: formData.get("password")?.trim(),
+    password_confirm: formData.get("password_confirm")?.trim(),
     role: formData.get("role"),
     enabled: true,
-    firstname: formData.get("firstname"),
-    lastname: formData.get("lastname"),
-    phone: formData.get("phone"),
+    firstname: formData.get("firstname")?.trim(),
+    lastname: formData.get("lastname")?.trim(),
+    phone: formData.get("phone")?.trim(),
   };
 
   if (!fields.email || !fields.password || !fields.password_confirm) {
@@ -67,14 +67,14 @@ export async function createUser(prevState, formData) {
 export async function editUser(prevState, formData) {
   const fields = {
     id: formData.get("id"),
-    email: formData.get("email"),
-    password: formData.get("password"),
-    password_confirm: formData.get("password_confirm"),
+    email: formData.get("email")?.trim(),
+    password: formData.get("password")?.trim(),
+    password_confirm: formData.get("password_confirm")?.trim(),
     role: formData.get("role"),
     enabled: Boolean(formData.get("enabled") || false),
-    firstname: formData.get("firstname"),
-    lastname: formData.get("lastname"),
-    phone: formData.get("phone"),
+    firstname: formData.get("firstname")?.trim(),
+    lastname: formData.get("lastname")?.trim(),
+    phone: formData.get("phone")?.trim(),
   };
 
   if (!fields.email) {

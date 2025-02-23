@@ -7,10 +7,9 @@ import { redirect } from "next/navigation";
 import { editUser } from "@/app/_actions/userActions";
 import LoadingOverlay from "@/app/_components/loadingOverlay";
 
-import styles from "./CreateUserForm.module.css";
 import { USER_ROLES } from "@/app/_constants";
 
-function EditUserForm({ user }) {
+function UserEditForm({ user }) {
   const [state, formAction, pending] = useActionState(editUser, null);
 
   useEffect(() => {
@@ -23,7 +22,7 @@ function EditUserForm({ user }) {
   }, [state]);
 
   return (
-    <form className={styles.form} action={formAction}>
+    <form styles={{ position: "relative" }} action={formAction}>
       {pending && <LoadingOverlay fullscreen />}
 
       <input type="hidden" name="id" value={user?.id || ""} />
@@ -101,4 +100,4 @@ function EditUserForm({ user }) {
   );
 }
 
-export default EditUserForm;
+export default UserEditForm;
