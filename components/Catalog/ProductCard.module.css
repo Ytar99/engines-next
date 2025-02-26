@@ -1,0 +1,67 @@
+.card {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.imageWrapper {
+  aspect-ratio: 1/1;
+  overflow: hidden;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  background-color: #f3f4f6;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.image:hover {
+  transform: scale(1.05);
+}
+
+.name {
+  font-size: 1rem;
+  margin: 0.5rem 0;
+  color: #1f2937;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.price {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f63b3b;
+  margin-bottom: 1rem;
+}
+
+.button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #f63b3b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.button:hover {
+  background-color: #eb2525;
+}
+
+.button:active {
+  transform: scale(0.98);
+}

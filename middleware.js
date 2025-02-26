@@ -8,6 +8,10 @@ export async function middleware(request) {
   const token = request.cookies.get("token");
   const isLoginPage = request.nextUrl.pathname.startsWith(LOGIN_URL);
 
+  if (request.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/catalog", request.url));
+  }
+
   // Если токен отсутствует
   if (!token) {
     if (isLoginPage) {
