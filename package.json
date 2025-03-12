@@ -3,29 +3,37 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "dotenv -c -- next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "dotenv -c -- next start",
     "lint": "next lint",
     "seed": "node prisma/seed.js",
     "migrate": "npx prisma migrate dev"
   },
   "dependencies": {
-    "@prisma/client": "^6.2.0",
+    "@emotion/cache": "^11.14.0",
+    "@emotion/server": "^11.11.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.4.7",
+    "@mui/material": "^6.4.7",
+    "@mui/material-nextjs": "^6.4.3",
+    "@prisma/client": "^6.4.1",
+    "axios": "^1.8.2",
     "bcrypt": "^5.1.1",
-    "dotenv": "^16.4.5",
-    "jose": "^5.9.6",
-    "js-cookie": "^3.0.5",
-    "next": "^15.1.4",
+    "dotenv": "^16.4.7",
+    "dotenv-cli": "^8.0.0",
+    "next": "15.2.1",
+    "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-icons": "^5.5.0",
-    "react-toastify": "^10.0.6",
-    "sqlite3": "^5.1.7"
+    "react-imask": "^7.6.1",
+    "react-toastify": "^11.0.5",
+    "react-use": "^17.6.0"
   },
   "devDependencies": {
-    "eslint": "^8.57.1",
-    "eslint-config-next": "^15.1.4",
-    "prisma": "^6.2.0"
+    "@eslint/eslintrc": "^3",
+    "eslint": "^9",
+    "eslint-config-next": "15.2.1",
+    "prisma": "^6.4.1"
   }
 }

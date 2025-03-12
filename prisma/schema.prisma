@@ -10,17 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// enum UserRole {
-//   USER
-//   ADMIN
-// }
-
-// enum OrderStatus {
-//   PROCESSING
-//   CANCELLED
-//   COMPLETED
-// }
-
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -31,7 +20,7 @@ model User {
   lastname  String?
   phone     String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @default(now()) 
 }
 
 model Customer {
@@ -40,25 +29,27 @@ model Customer {
   firstname String?
   lastname  String?
   phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
   orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
 }
 
 model Order {
   id         Int            @id @default(autoincrement())
   customerId Int
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
   status     String
   customer   Customer       @relation(fields: [customerId], references: [id])
   products   OrderProduct[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 }
 
 model Engine {
   id       Int       @id @default(autoincrement())
   name     String    @unique
   products Product[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
 }
 
 model Product {
@@ -72,6 +63,8 @@ model Product {
   img           String?
   engine        Engine?        @relation(fields: [engineId], references: [id])
   orderProducts OrderProduct[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now()) 
 }
 
 model OrderProduct {

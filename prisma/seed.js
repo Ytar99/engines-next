@@ -2,8 +2,11 @@ require("dotenv").config();
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require("@prisma/client");
 
-const constantsPath = require("path").resolve("./app/_constants");
-const { USER_ROLES } = require(constantsPath);
+const USER_ROLES = Object.freeze({
+  ADMIN: "ADMIN",
+  USER: "USER",
+  GUEST: "GUEST",
+});
 
 const prisma = new PrismaClient();
 
@@ -31,6 +34,34 @@ function logToConsole(text = "", type = "info") {
   result += text;
 
   console.log(result);
+}
+
+function generateRandomProducts(N) {
+  const products = [];
+  const engines = ["2_8", "3_8", "BT", "ISBe"]; // Пример названий двигателей
+
+  for (let i = 0; i < N; i++) {
+    const article = (3927063 + i).toString(); // Уникальный артикул
+    const name = `Товар ${i + 1}`; // Название товара
+    const description = `Описание товара ${i + 1}`; // Описание товара
+    const price = parseFloat((Math.random() * 500).toFixed(2)); // Случайная цена от 0 до 500
+    const count = Math.floor(Math.random() * 100); // Случайное количество от 0 до 99
+    const engineId = Math.floor(Math.random() * engines.length); // Случайный id двигателя
+    const img = `https://example.com/images/product_${i + 1}.jpg`; // Путь к изображению товара
+
+    const product = {
+      article,
+      name,
+      description,
+      price,
+      count,
+      engineName: engines[engineId],
+      img,
+    };
+    products.push(product);
+  }
+
+  return products;
 }
 
 async function main() {
@@ -67,30 +98,7 @@ async function main() {
   }
 
   // Создание продуктов
-  const products = [
-    {
-      article: "3927063",
-      name: "Болт шатуна",
-      price: 150,
-      count: 10,
-      engineName: "2_8",
-    },
-    {
-      article: "3927064",
-      name: "Гайка коробки",
-      description: "Гайка для КПП",
-      price: 75.5,
-      count: 25,
-      engineName: "BT",
-    },
-    {
-      article: "3927065",
-      name: "Фильтр воздушный",
-      price: 320,
-      count: 8,
-      engineName: "ISBe",
-    },
-  ];
+  const products = generateRandomProducts(63);
 
   for (const product of products) {
     const exists = await prisma.product.findFirst({
