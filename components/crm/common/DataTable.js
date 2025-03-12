@@ -28,7 +28,7 @@ export const DataTable = ({
   const { page, limit, total, totalPages } = pagination;
 
   const handleChangePage = (event, newPage) => {
-    onPageChange(newPage);
+    onPageChange(newPage + 1);
   };
 
   const handleChangeRowsPerPage = (event) => {
