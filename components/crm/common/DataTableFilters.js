@@ -1,4 +1,5 @@
 // DataTableFilters.js
+import { useState } from "react";
 import {
   Box,
   Checkbox,
@@ -14,9 +15,18 @@ import { Search as SearchIcon } from "@mui/icons-material";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 
-export const DataTableFilters = ({ filtersConfig, filters, onFilterChange, searchTerm, onSearchChange }) => {
+export const DataTableFilters = ({ filtersConfig, initialFilters, onFilterChange, searchTerm, onSearchChange }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [filters, setFilters] = useState(initialFilters);
+
+  const handleFiltersChange = (e) => {
+    const { name, value } = e.target;
+
+    setFilters({ ...filters, [name]: value });
+    onFilterChange({ [name]: value });
+  };
 
   const renderFilterComponent = (filter) => {
     switch (filter.type) {
@@ -28,7 +38,7 @@ export const DataTableFilters = ({ filtersConfig, filters, onFilterChange, searc
               label={filter.label}
               name={filter.name}
               value={filters[filter.name] || ""}
-              onChange={onFilterChange}
+              onChange={handleFiltersChange}
             >
               {filter.options.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -43,7 +53,9 @@ export const DataTableFilters = ({ filtersConfig, filters, onFilterChange, searc
         return (
           <FormControlLabel
             key={filter.name}
-            control={<Checkbox name={filter.name} checked={filters[filter.name] || false} onChange={onFilterChange} />}
+            control={
+              <Checkbox name={filter.name} checked={filters[filter.name] || false} onChange={handleFiltersChange} />
+            }
             label={filter.label}
           />
         );
@@ -57,7 +69,7 @@ export const DataTableFilters = ({ filtersConfig, filters, onFilterChange, searc
             label={filter.label}
             name={filter.name}
             value={filters[filter.name] || ""}
-            onChange={onFilterChange}
+            onChange={handleFiltersChange}
             size="small"
           />
         );

@@ -6,14 +6,26 @@ import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
 import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
 import { useProducts } from "@/lib/hooks/useProducts";
+import { useProduct } from "@/lib/hooks/useProduct";
+import { useDebounce } from "react-use";
+import { toast } from "react-toastify";
+
+function getSelectedProductString(product) {
+  if (!product) {
+    return "";
+  }
+
+  return `[${product.article}] ${product.name}`;
+}
 
 const initialFilters = { engineId: "" };
 
 const ProductsPage = () => {
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { products, pagination, loading, error, setPage, setLimit, setFilters, setSearch } = useProducts();
+  const { products, pagination, loading, error, setPage, setLimit, setFilters, setSearch, refetch } = useProducts();
+  const deletedProduct = useProduct();
 
   const filtersConfig = [
     {
@@ -22,8 +34,10 @@ const ProductsPage = () => {
       label: "Двигатель",
       options: [
         { value: "", label: "Все" },
-        { value: "1", label: "V8" },
-        { value: "2", label: "V6" },
+        { value: "1", label: "2_8" },
+        { value: "2", label: "BT" },
+        { value: "3", label: "3_8" },
+        { value: "4", label: "ISBe" },
       ],
     },
   ];
@@ -31,6 +45,7 @@ const ProductsPage = () => {
   const columns = [
     { field: "article", header: "Артикул" },
     { field: "name", header: "Название" },
+    { field: "description", header: "Описание" },
     {
       field: "price",
       header: "Цена",
@@ -40,17 +55,24 @@ const ProductsPage = () => {
   ];
 
   const handleSearchChange = (event) => {
-    const searchTerm = event.target.value;
-    setSearchTerm(searchTerm);
-    setSearch(searchTerm); // Передаем новое значение поиска в хук
+    const value = event.target.value;
+    setSearchTerm(value);
   };
+
+  useDebounce(
+    () => {
+      setSearch(searchTerm); // Передаем новое значение поиска в хук
+    },
+    800,
+    [searchTerm]
+  );
 
   return (
     <CrmLayout>
       {error && <div>{error}</div>} {/* Отображение ошибки, если есть */}
       <DataTableFilters
         filtersConfig={filtersConfig}
-        filters={initialFilters}
+        initialFilters={initialFilters}
         onFilterChange={setFilters}
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange} // Передаем обработчик изменений поиска
@@ -59,19 +81,22 @@ const ProductsPage = () => {
         columns={columns}
         data={products}
         pagination={pagination}
-        loading={loading}
+        loading={loading || deletedProduct.loading}
         onPageChange={setPage}
         onRowsPerPageChange={setLimit}
-        onDelete={setSelectedId}
+        onDelete={setSelectedForDelete}
       />
       <ConfirmationDialog
-        open={!!selectedId}
-        onClose={() => setSelectedId(null)}
+        open={!!selectedForDelete}
+        onClose={() => setSelectedForDelete(null)}
         onConfirm={() => {
-          deleteProduct(selectedId);
-          setSelectedId(null);
+          deletedProduct.deleteProduct(selectedForDelete?.id, () => {
+            toast.success("Продукт удалён");
+            refetch();
+          });
+          setSelectedForDelete(null);
         }}
-        contentText={`Вы уверены, что хотите удалить продукт #${selectedId}?`}
+        contentText={`Вы уверены, что хотите удалить продукт "${getSelectedProductString(selectedForDelete)}"?`}
       />
     </CrmLayout>
   );

@@ -66,7 +66,7 @@ export const DataTable = ({
                           </IconButton>
                         )}
                         {onDelete && (
-                          <IconButton onClick={() => onDelete(row.id)} size="small" color="error" disabled={loading}>
+                          <IconButton onClick={() => onDelete(row)} size="small" color="error" disabled={loading}>
                             <DeleteIcon />
                           </IconButton>
                         )}
