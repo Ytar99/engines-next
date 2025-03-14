@@ -1,170 +1,126 @@
 // pages/crm/users/index.js
-import { useState, useEffect, useCallback } from "react";
-import { getSession } from "next-auth/react";
-import { Box, Button } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
-import { useDebounce } from "react-use";
+import { useState } from "react";
 import { toast } from "react-toastify";
+import { useDebounce } from "react-use";
+import { Button, Box } from "@mui/material";
+import { Add as AddIcon } from "@mui/icons-material";
 
-import prisma from "@/lib/prisma";
 import CrmLayout from "@/components/layouts/CrmLayout";
-import { UserFilters } from "@/components/crm/Users/UsersFilters";
-import { UserTable } from "@/components/crm/Users/UsersTable";
-import { DeleteConfirmationDialog } from "@/components/crm/Users/DeleteConfirmationDialog";
+import { useUsers } from "@/lib/hooks/useUsers";
+import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
+import { DataTable } from "@/components/crm/common/DataTable";
+import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
+import { useUser } from "@/lib/hooks/useUser";
 
-// Основной компонент страницы пользователей
-const UsersPage = ({ initialUsers, total, initialFilters }) => {
-  const [users, setUsers] = useState(initialUsers);
-  const [filters, setFilters] = useState(initialFilters);
-  const [searchTerm, setSearchTerm] = useState(initialFilters.search);
-  const [totalUsers, setTotalUsers] = useState(total);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
+const initialFilters = { enabled: true };
 
-  // Задержка обновления поискового фильтра
+const UsersPage = () => {
+  const [selectedForDelete, setSelectedForDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const users = useUsers(initialFilters);
+  const deletedUser = useUser();
+
+  const filtersConfig = [
+    {
+      type: "select",
+      name: "role",
+      label: "Роль",
+      options: [
+        { value: "", label: "Все" },
+        { value: "ADMIN", label: "Админ" },
+        { value: "USER", label: "Пользователь" },
+      ],
+    },
+    {
+      type: "checkbox",
+      name: "enabled",
+      label: "Только активные",
+      checked: true,
+    },
+  ];
+
+  const columns = [
+    { field: "id", header: "ID" },
+    {
+      field: "name",
+      header: "Имя",
+      render: (_, row) => [row.firstname, row.lastname].filter(Boolean).join(" "),
+    },
+    { field: "email", header: "Email" },
+    { field: "role", header: "Роль" },
+    {
+      field: "enabled",
+      header: "Статус",
+      render: (value) => (value ? "Активен" : "Неактивен"),
+    },
+  ];
+
   useDebounce(
     () => {
-      setFilters((prev) => ({ ...prev, search: searchTerm }));
-      setPage(0);
+      users.setSearch(searchTerm); // Передаем новое значение поиска в хук
     },
     800,
     [searchTerm]
   );
 
-  // Функция загрузки пользователей
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    const query = new URLSearchParams({
-      page: page + 1,
-      limit: rowsPerPage,
-      ...filters,
-    }).toString();
-    const res = await fetch(`/api/crm/users?${query}`);
-    const data = await res.json();
-    setUsers(data.users);
-    setTotalUsers(data.total);
-    setLoading(false);
-  }, [filters, page, rowsPerPage]);
-
-  // Обработчик изменения фильтров
-  const handleFilterChange = (e) => {
-    const { name, value, checked, type } = e.target;
-    const newValue = type === "checkbox" ? checked : value;
-    setFilters((prev) => ({ ...prev, [name]: newValue }));
-    setPage(0);
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchTerm(value);
   };
 
-  // Обработчик изменения поискового запроса
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
+  const handleDelete = () => {
+    deletedUser.deleteUser(selectedForDelete?.id, () => {
+      toast.success("Пользователь удалён");
+      users.refetch();
+    });
 
-  // Обработчик клика по кнопке удаления
-  const handleDeleteClick = (userId) => {
-    const user = users.find((u) => u.id === userId);
-    setSelectedUser(user);
+    setSelectedForDelete(null);
   };
-
-  // Обработчик подтверждения удаления
-  const handleConfirmDelete = async () => {
-    try {
-      const response = await fetch(`/api/crm/users?userId=${selectedUser.id}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        toast.success("Пользователь успешно удален");
-        fetchUsers();
-      } else {
-        const error = await response.json();
-        toast.error(error.message || "Ошибка при удалении пользователя");
-      }
-    } catch (error) {
-      toast.error("Ошибка сети. Попробуйте позже");
-    } finally {
-      setSelectedUser(null);
-    }
-  };
-
-  // Загрузка пользователей при изменении фильтров или страницы
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
 
   return (
     <CrmLayout>
-      <UserFilters
-        filters={filters}
+      <DataTableFilters
+        filtersConfig={filtersConfig}
+        initialFilters={initialFilters}
         searchTerm={searchTerm}
-        handleFilterChange={handleFilterChange}
-        handleSearchChange={handleSearchChange}
+        onFilterChange={users.setFilters}
+        onSearchChange={handleSearchChange}
       />
+
       <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
-        <Button variant="contained" color="success" startIcon={<AddIcon />} href="/crm/users/create" disabled={loading}>
+        <Button
+          variant="contained"
+          color="success"
+          startIcon={<AddIcon />}
+          href="/crm/users/create"
+          disabled={users.loading}
+        >
           Создать пользователя
         </Button>
       </Box>
 
-      <UserTable
-        users={users}
-        totalUsers={totalUsers}
-        page={page}
-        setPage={setPage}
-        rowsPerPage={rowsPerPage}
-        setRowsPerPage={setRowsPerPage}
-        loading={loading}
-        handleDeleteClick={handleDeleteClick}
+      <DataTable
+        columns={columns}
+        data={users.users}
+        pagination={users.pagination}
+        loading={users.loading || deletedUser.loading}
+        getEditUrl={(userId) => {
+          return `/crm/users/${userId}/edit`;
+        }}
+        onPageChange={(newPage) => users.setPage(newPage + 1)}
+        onRowsPerPageChange={users.setLimit}
+        onDelete={setSelectedForDelete}
       />
-      <DeleteConfirmationDialog
-        selectedUser={selectedUser}
-        setSelectedUser={setSelectedUser}
-        handleConfirmDelete={handleConfirmDelete}
+
+      <ConfirmationDialog
+        open={!!selectedForDelete}
+        onClose={() => setSelectedForDelete(null)}
+        onConfirm={handleDelete}
+        contentText={`Вы уверены, что хотите удалить пользователя #${selectedForDelete?.id} - [${selectedForDelete?.role}] ${selectedForDelete?.email}?`}
       />
     </CrmLayout>
   );
 };
-
-// Серверная загрузка начальных данных
-export async function getServerSideProps(context) {
-  const session = await getSession(context);
-  if (!session) return { redirect: { destination: "/crm/login", permanent: false } };
-
-  const initialFilters = {
-    role: context.query.role || "",
-    search: context.query.search || "",
-    enabled: context.query.enabled === "false" ? false : true,
-  };
-
-  const where = {
-    enabled: initialFilters.enabled,
-    role: initialFilters.role || undefined,
-    OR: initialFilters.search
-      ? [
-          { email: { contains: initialFilters.search } },
-          { firstname: { contains: initialFilters.search } },
-          { lastname: { contains: initialFilters.search } },
-        ]
-      : undefined,
-  };
-
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      skip: 0,
-      take: 10,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.user.count({ where }),
-  ]);
-
-  return {
-    props: {
-      initialUsers: JSON.parse(JSON.stringify(users)),
-      total,
-      initialFilters,
-    },
-  };
-}
 
 export default UsersPage;

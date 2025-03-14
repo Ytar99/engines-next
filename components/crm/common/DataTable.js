@@ -21,11 +21,12 @@ export const DataTable = ({
   loading,
   onPageChange,
   onRowsPerPageChange,
+  getEditUrl,
   onEdit,
   onDelete,
   actions = true,
 }) => {
-  const { page, limit, total, totalPages } = pagination;
+  const { page, limit, total, totalPages } = pagination || {};
 
   const handleChangePage = (event, newPage) => {
     onPageChange(newPage + 1);
@@ -60,6 +61,11 @@ export const DataTable = ({
                     ))}
                     {actions && (
                       <TableCell>
+                        {getEditUrl && (
+                          <IconButton href={getEditUrl(row.id)} size="small" disabled={loading}>
+                            <EditIcon />
+                          </IconButton>
+                        )}
                         {onEdit && (
                           <IconButton onClick={() => onEdit(row.id)} size="small" disabled={loading}>
                             <EditIcon />

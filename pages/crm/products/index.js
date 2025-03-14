@@ -27,7 +27,7 @@ const ProductsPage = () => {
 
   const products = useProducts();
   const engines = useEngines();
-  const deletedProduct = useProduct();
+  const deletedProduct = useProduct(initialFilters);
 
   const enginesOptions = engines?.engines.map((engine) => ({ value: engine.id, label: engine.name }));
 
@@ -60,6 +60,15 @@ const ProductsPage = () => {
     { field: "count", header: "Остаток" },
   ];
 
+  const handleDelete = () => {
+    deletedProduct.deleteProduct(selectedForDelete?.id, () => {
+      toast.success("Продукт удалён");
+      products.refetch();
+    });
+
+    setSelectedForDelete(null);
+  };
+
   const handleSearchChange = (event) => {
     const value = event.target.value;
     setSearchTerm(value);
@@ -80,8 +89,8 @@ const ProductsPage = () => {
       <DataTableFilters
         filtersConfig={filtersConfig}
         initialFilters={initialFilters}
-        onFilterChange={products.setFilters}
         searchTerm={searchTerm}
+        onFilterChange={products.setFilters}
         onSearchChange={handleSearchChange} // Передаем обработчик изменений поиска
       />
       <DataTable
@@ -96,13 +105,7 @@ const ProductsPage = () => {
       <ConfirmationDialog
         open={!!selectedForDelete}
         onClose={() => setSelectedForDelete(null)}
-        onConfirm={() => {
-          deletedProduct.deleteProduct(selectedForDelete?.id, () => {
-            toast.success("Продукт удалён");
-            products.refetch();
-          });
-          setSelectedForDelete(null);
-        }}
+        onConfirm={handleDelete}
         contentText={`Вы уверены, что хотите удалить продукт "${getSelectedProductString(selectedForDelete)}"?`}
       />
     </CrmLayout>

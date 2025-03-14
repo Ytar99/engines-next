@@ -1,74 +1,113 @@
-import bcrypt from "bcrypt";
 import prisma from "@/lib/prisma";
+import bcrypt from "bcrypt";
+import { validateEmail, validatePhone } from "@/lib/utils/validation";
 
 export default async function handler(req, res) {
   const { id } = req.query;
 
-  if (req.method === "GET") {
-    try {
+  try {
+    // GET USER
+    if (req.method === "GET") {
       const user = await prisma.user.findUnique({
         where: { id: parseInt(id) },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          enabled: true,
+          firstname: true,
+          lastname: true,
+          phone: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       });
-      if (!user) {
-        return res.status(404).json({ message: "Пользователь не найден" });
-      }
-      return res.status(200).json(user);
-    } catch (error) {
-      return res.status(500).json({ message: "Ошибка сервера" });
+
+      return user ? res.status(200).json({ data: user }) : res.status(404).json({ error: "Пользователь не найден" });
     }
-  }
 
-  if (req.method === "PUT") {
-    try {
-      const { email, password, role, enabled, firstname, lastname, phone } = req.body;
-
-      // Проверка на существование пользователя
-      const user = await prisma.user.findUnique({
+    // UPDATE USER
+    if (req.method === "PUT") {
+      const existingUser = await prisma.user.findUnique({
         where: { id: parseInt(id) },
       });
 
-      if (!user) {
-        return res.status(404).json({ message: "Пользователь не найден" });
+      if (!existingUser) {
+        return res.status(404).json({ error: "Пользователь не найден" });
       }
 
-      const oldUser = await prisma.user.findUnique({
-        where: { email: email },
-      });
+      const { email, password, ...rest } = req.body;
+      const errors = [];
 
-      if (oldUser && oldUser.id !== user.id) {
-        return res.status(409).json({ message: "Пользователь с таким email уже существует" });
+      // Валидация email
+      if (email && email !== existingUser.email) {
+        if (!validateEmail(email)) {
+          errors.push("Неверный формат email");
+        } else {
+          const emailExists = await prisma.user.findUnique({ where: { email } });
+          if (emailExists) {
+            errors.push("Пользователь с таким email уже существует");
+          }
+        }
+      }
+
+      // Валидация телефона
+      if (rest.phone && !validatePhone(rest.phone)) {
+        errors.push("Неверный формат телефона");
+      }
+
+      if (errors.length > 0) {
+        return res.status(400).json({ error: errors.join(", ") });
       }
 
       // Подготовка данных для обновления
-      const updateData = {
-        email,
-        role,
-        enabled,
-        firstname,
-        lastname,
-        phone,
-      };
+      const updateData = { ...rest };
+      if (email) updateData.email = email;
 
-      // Если передан пароль, хешируем его
+      // Хеширование пароля при наличии
       if (password) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        updateData.password = hashedPassword;
+        updateData.password = await bcrypt.hash(password, 12);
       }
 
-      // Обновление пользователя
       const updatedUser = await prisma.user.update({
         where: { id: parseInt(id) },
         data: updateData,
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          enabled: true,
+          firstname: true,
+          lastname: true,
+          phone: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       });
 
-      res.status(200).json(updatedUser);
-    } catch (error) {
-      return res.status(500).json({ message: `Ошибка сервера: ${error.toString()}` });
+      return res.status(200).json({ data: updatedUser });
     }
-  }
 
-  {
-    res.setHeader("Allow", ["GET", "PUT"]);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+    // DELETE USER
+    if (req.method === "DELETE") {
+      await prisma.user.delete({
+        where: { id: parseInt(id) },
+      });
+
+      return res.status(204).end();
+    }
+
+    return res.status(405).json({ error: "Метод не разрешен" });
+  } catch (error) {
+    console.error("User API error:", error);
+
+    // Обработка ошибок Prisma
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    return res.status(500).json({
+      error: error.message || "Внутренняя ошибка сервера",
+    });
   }
 }

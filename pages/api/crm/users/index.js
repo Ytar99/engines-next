@@ -1,13 +1,16 @@
-import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
-
-const validateEmail = (email) => /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]{2,})*$/.test(email);
-const validatePhone = (phone) => /^[0-9]{10}$/.test(phone);
+import prisma from "@/lib/prisma";
+import { validateEmail, validatePhone } from "@/lib/utils/validation";
 
 export default async function handler(req, res) {
   try {
+    // Обработка GET запроса
     if (req.method === "GET") {
       const { page = 1, limit = 10, role, search, enabled } = req.query;
+
+      // Валидация параметров
+      const pageNum = Math.max(1, parseInt(page)) || 1;
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit))) || 10;
 
       const where = {
         enabled: enabled === "true" ? true : undefined,
@@ -20,75 +23,86 @@ export default async function handler(req, res) {
       const [users, total] = await Promise.all([
         prisma.user.findMany({
           where,
-          skip: (parseInt(page) - 1) * parseInt(limit),
-          take: parseInt(limit),
+          skip: (pageNum - 1) * limitNum,
+          take: limitNum,
           orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            enabled: true,
+            firstname: true,
+            lastname: true,
+            phone: true,
+            createdAt: true,
+          },
         }),
         prisma.user.count({ where }),
       ]);
 
-      return res.status(200).json({ users, total });
+      return res.status(200).json({
+        data: users,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
     }
 
+    // Обработка DELETE запроса
     if (req.method === "DELETE") {
       const { userId } = req.query;
 
+      if (!userId) {
+        return res.status(400).json({ error: "Не указан ID пользователя" });
+      }
+
+      const id = parseInt(userId);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Некорректный ID пользователя" });
+      }
+
       try {
-        const id = Number.parseInt(userId);
-
-        if (Number.isNaN(id)) {
-          throw new Error("Некорректный ID пользователя");
-        }
-
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.delete({
           where: { id },
         });
-
-        if (!user) {
-          return res.status(404).json({ message: "Пользователь не найден" });
-        }
-
-        await prisma.user.delete({
-          where: { id: id },
-        });
-
-        return res.status(200).json({ success: true });
+        return res.status(204).end();
       } catch (error) {
-        console.error("Delete user error:", error);
-        return res.status(500).json({ message: "Ошибка при удалении пользователя" });
+        if (error.code === "P2025") {
+          return res.status(404).json({ error: "Пользователь не найден" });
+        }
+        throw error;
       }
     }
 
+    // Обработка POST запроса
     if (req.method === "POST") {
       const { email, password, role = "USER", enabled = true, firstname, lastname, phone } = req.body;
 
-      // Валидация данных
-      if (!email || !password) {
-        return res.status(400).json({ message: "Заполните обязательные поля" });
+      // Валидация входных данных
+      const errors = [];
+      if (!email) errors.push("Email обязателен");
+      if (!password) errors.push("Пароль обязателен");
+      if (!validateEmail(email)) errors.push("Неверный формат email");
+      if (!validatePhone(phone)) errors.push("Неверный формат телефона");
+
+      if (errors.length > 0) {
+        return res.status(400).json({ error: errors.join(", ") });
       }
 
-      if (!validateEmail(email)) {
-        return res.status(400).json({ message: "Неверный формат email" });
-      }
-
-      if (phone && !validatePhone(phone)) {
-        return res.status(400).json({ message: "Неверный формат телефона" });
-      }
-
-      // Проверка существующего пользователя
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
-
+      // Проверка уникальности email
+      const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) {
-        return res.status(409).json({ message: "Пользователь с таким email уже существует" });
+        return res.status(409).json({ error: "Пользователь с таким email уже существует" });
       }
 
       // Хеширование пароля
       const hashedPassword = await bcrypt.hash(password, 12);
 
       // Создание пользователя
-      const user = await prisma.user.create({
+      const newUser = await prisma.user.create({
         data: {
           email,
           password: hashedPassword,
@@ -98,16 +112,23 @@ export default async function handler(req, res) {
           lastname,
           phone,
         },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          enabled: true,
+          createdAt: true,
+        },
       });
 
-      return res.status(201).json(user);
+      return res.status(201).json({ data: newUser });
     }
 
-    return res.status(405).json({ error: "Метод недоступен" });
+    return res.status(405).json({ error: "Метод не поддерживается" });
   } catch (error) {
-    console.error("API Error:", error);
+    console.error("Ошибка API:", error);
     return res.status(500).json({
-      message: "Произошла ошибка на сервере",
+      error: error.message || "Внутренняя ошибка сервера",
     });
   }
 }

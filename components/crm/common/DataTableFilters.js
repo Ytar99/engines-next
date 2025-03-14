@@ -22,10 +22,16 @@ export const DataTableFilters = ({ filtersConfig, initialFilters, onFilterChange
   const [filters, setFilters] = useState(initialFilters);
 
   const handleFiltersChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, checked, type } = e.target;
 
-    setFilters({ ...filters, [name]: value });
-    onFilterChange({ [name]: value });
+    let newValue = value;
+
+    if (type === "checkbox") {
+      newValue = checked;
+    }
+
+    setFilters({ ...filters, [name]: newValue });
+    onFilterChange({ [name]: newValue });
   };
 
   const renderFilterComponent = (filter) => {
