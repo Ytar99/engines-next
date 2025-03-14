@@ -1,6 +1,6 @@
 // pages/crm/users/index.js
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
 import { DataTable } from "@/components/crm/common/DataTable";
@@ -9,6 +9,7 @@ import { useProducts } from "@/lib/hooks/useProducts";
 import { useProduct } from "@/lib/hooks/useProduct";
 import { useDebounce } from "react-use";
 import { toast } from "react-toastify";
+import { useEngines } from "@/lib/hooks/useEngines";
 
 function getSelectedProductString(product) {
   if (!product) {
@@ -24,28 +25,33 @@ const ProductsPage = () => {
   const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { products, pagination, loading, error, setPage, setLimit, setFilters, setSearch, refetch } = useProducts();
+  const products = useProducts();
+  const engines = useEngines();
   const deletedProduct = useProduct();
 
-  const filtersConfig = [
-    {
-      type: "select",
-      name: "engineId",
-      label: "Двигатель",
-      options: [
-        { value: "", label: "Все" },
-        { value: "1", label: "2_8" },
-        { value: "2", label: "BT" },
-        { value: "3", label: "3_8" },
-        { value: "4", label: "ISBe" },
-      ],
-    },
-  ];
+  const enginesOptions = engines?.engines.map((engine) => ({ value: engine.id, label: engine.name }));
+
+  const filtersConfig = useMemo(
+    () => [
+      {
+        type: "select",
+        name: "engineId",
+        label: "Двигатель",
+        options: [{ value: "", label: "Все" }, ...enginesOptions],
+      },
+    ],
+    [enginesOptions]
+  );
 
   const columns = [
     { field: "article", header: "Артикул" },
     { field: "name", header: "Название" },
     { field: "description", header: "Описание" },
+    {
+      field: "engineId",
+      header: "Двигатель",
+      render: (value) => engines.engines.find((engine) => engine.id === value)?.name,
+    },
     {
       field: "price",
       header: "Цена",
@@ -61,7 +67,7 @@ const ProductsPage = () => {
 
   useDebounce(
     () => {
-      setSearch(searchTerm); // Передаем новое значение поиска в хук
+      products.setSearch(searchTerm); // Передаем новое значение поиска в хук
     },
     800,
     [searchTerm]
@@ -69,21 +75,22 @@ const ProductsPage = () => {
 
   return (
     <CrmLayout>
-      {error && <div>{error}</div>} {/* Отображение ошибки, если есть */}
+      {products.error && <div>Ошибка продуктов: {products.error}</div>}
+      {engines.error && <div>Ошибка двигателей: {engines.error}</div>}
       <DataTableFilters
         filtersConfig={filtersConfig}
         initialFilters={initialFilters}
-        onFilterChange={setFilters}
+        onFilterChange={products.setFilters}
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange} // Передаем обработчик изменений поиска
       />
       <DataTable
         columns={columns}
-        data={products}
-        pagination={pagination}
-        loading={loading || deletedProduct.loading}
-        onPageChange={setPage}
-        onRowsPerPageChange={setLimit}
+        data={products.products}
+        pagination={products.pagination}
+        loading={products.loading || deletedProduct.loading}
+        onPageChange={products.setPage}
+        onRowsPerPageChange={products.setLimit}
         onDelete={setSelectedForDelete}
       />
       <ConfirmationDialog
@@ -92,7 +99,7 @@ const ProductsPage = () => {
         onConfirm={() => {
           deletedProduct.deleteProduct(selectedForDelete?.id, () => {
             toast.success("Продукт удалён");
-            refetch();
+            products.refetch();
           });
           setSelectedForDelete(null);
         }}
