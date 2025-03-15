@@ -54,7 +54,7 @@ model Engine {
 
 model Product {
   id            Int            @id @default(autoincrement())
-  article       String         @unique
+  article       String
   name          String
   description   String?
   price         Float

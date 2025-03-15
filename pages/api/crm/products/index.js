@@ -58,13 +58,13 @@ export default async function handler(req, res) {
       }
 
       // Check for existing article
-      const existingProduct = await prisma.product.findUnique({
-        where: { article: req.body.article },
-      });
+      // const existingProduct = await prisma.product.findUnique({
+      //   where: { article: req.body.article },
+      // });
 
-      if (existingProduct) {
-        return res.status(409).json({ error: "Товар с таким артикулом уже существует" });
-      }
+      // if (existingProduct) {
+      //   return res.status(409).json({ error: "Товар с таким артикулом уже существует" });
+      // }
 
       const productData = {
         ...req.body,

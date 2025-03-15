@@ -1,15 +1,17 @@
 // pages/crm/users/index.js
 
 import { useMemo, useState } from "react";
+import { useDebounce } from "react-use";
+import { toast } from "react-toastify";
+import { Box, Button } from "@mui/material";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
 import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
 import { useProducts } from "@/lib/hooks/useProducts";
 import { useProduct } from "@/lib/hooks/useProduct";
-import { useDebounce } from "react-use";
-import { toast } from "react-toastify";
 import { useEngines } from "@/lib/hooks/useEngines";
+import { Add as AddIcon } from "@mui/icons-material";
 
 function getSelectedProductString(product) {
   if (!product) {
@@ -46,7 +48,7 @@ const ProductsPage = () => {
   const columns = [
     { field: "article", header: "Артикул" },
     { field: "name", header: "Название" },
-    { field: "description", header: "Описание" },
+    // { field: "description", header: "Описание" },
     {
       field: "engineId",
       header: "Двигатель",
@@ -86,6 +88,7 @@ const ProductsPage = () => {
     <CrmLayout>
       {products.error && <div>Ошибка продуктов: {products.error}</div>}
       {engines.error && <div>Ошибка двигателей: {engines.error}</div>}
+
       <DataTableFilters
         filtersConfig={filtersConfig}
         initialFilters={initialFilters}
@@ -93,11 +96,25 @@ const ProductsPage = () => {
         onFilterChange={products.setFilters}
         onSearchChange={handleSearchChange} // Передаем обработчик изменений поиска
       />
+
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
+        <Button
+          variant="contained"
+          color="success"
+          startIcon={<AddIcon />}
+          href="/crm/products/create"
+          disabled={products.loading}
+        >
+          Создать продукта
+        </Button>
+      </Box>
+
       <DataTable
         columns={columns}
         data={products.products}
         pagination={products.pagination}
         loading={products.loading || deletedProduct.loading}
+        getEditUrl={(productId) => `/crm/products/${productId}/edit`}
         onPageChange={products.setPage}
         onRowsPerPageChange={products.setLimit}
         onDelete={setSelectedForDelete}

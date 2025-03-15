@@ -31,15 +31,15 @@ export default async function handler(req, res) {
       }
 
       // Check for duplicate article
-      if (req.body.article && req.body.article !== existingProduct.article) {
-        const duplicate = await prisma.product.findUnique({
-          where: { article: req.body.article },
-        });
+      // if (req.body.article && req.body.article !== existingProduct.article) {
+      //   const duplicate = await prisma.product.findUnique({
+      //     where: { article: req.body.article },
+      //   });
 
-        if (duplicate) {
-          return res.status(409).json({ error: "Артикул уже используется" });
-        }
-      }
+      //   if (duplicate) {
+      //     return res.status(409).json({ error: "Артикул уже используется" });
+      //   }
+      // }
 
       const updateData = {
         ...req.body,
