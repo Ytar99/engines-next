@@ -5,11 +5,11 @@ import { toast } from "react-toastify";
 import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { validateProduct } from "@/lib/utils/validation";
-import { useEngines } from "@/lib/hooks/useEngines";
+import { useAllEngines } from "@/lib/hooks/useAllEngines";
 
 export default function CreateProductPage() {
   const router = useRouter();
-  const { engines, loading: enginesLoading } = useEngines();
+  const engines = useAllEngines();
 
   const [form, setForm] = useState({
     article: "",
@@ -141,12 +141,12 @@ export default function CreateProductPage() {
               value={form.engineId}
               onChange={handleChange}
               label="Двигатель"
-              disabled={enginesLoading}
+              disabled={engines.loading}
             >
               <MenuItem value="">
                 <em>Не выбрано</em>
               </MenuItem>
-              {engines.map((engine) => (
+              {engines.engines.map((engine) => (
                 <MenuItem key={engine.id} value={engine.id}>
                   {engine.name}
                 </MenuItem>

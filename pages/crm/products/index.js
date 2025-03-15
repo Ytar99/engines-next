@@ -10,7 +10,7 @@ import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
 import { useProducts } from "@/lib/hooks/useProducts";
 import { useProduct } from "@/lib/hooks/useProduct";
-import { useEngines } from "@/lib/hooks/useEngines";
+import { useAllEngines } from "@/lib/hooks/useAllEngines";
 import { Add as AddIcon } from "@mui/icons-material";
 
 function getSelectedProductString(product) {
@@ -28,8 +28,16 @@ const ProductsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const products = useProducts();
-  const engines = useEngines();
+  const engines = useAllEngines();
   const deletedProduct = useProduct(initialFilters);
+
+  useDebounce(
+    () => {
+      products.setSearch(searchTerm); // Передаем новое значение поиска в хук
+    },
+    800,
+    [searchTerm]
+  );
 
   const enginesOptions = engines?.engines.map((engine) => ({ value: engine.id, label: engine.name }));
 
@@ -75,14 +83,6 @@ const ProductsPage = () => {
     const value = event.target.value;
     setSearchTerm(value);
   };
-
-  useDebounce(
-    () => {
-      products.setSearch(searchTerm); // Передаем новое значение поиска в хук
-    },
-    800,
-    [searchTerm]
-  );
 
   return (
     <CrmLayout>

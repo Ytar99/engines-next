@@ -3,6 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 import prisma from "@/lib/prisma";
 
+const DAYS_30 = 30 * 24 * 60 * 60;
+
 export default NextAuth({
   providers: [
     CredentialsProvider({
@@ -47,11 +49,11 @@ export default NextAuth({
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 дней
+    maxAge: DAYS_30,
   },
   jwt: {
     encryption: true,
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: DAYS_30,
   },
   secret: process.env.NEXTAUTH_SECRET,
   cookies: {

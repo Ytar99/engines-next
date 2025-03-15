@@ -8,6 +8,9 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       const { page = 1, limit = 10, engineId, search, minPrice, maxPrice } = req.query;
 
+      const pageNum = Math.max(1, parseInt(page)) || 1;
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit))) || 10;
+
       const where = {
         AND: [
           {
@@ -32,8 +35,8 @@ export default async function handler(req, res) {
       const [products, total] = await Promise.all([
         prisma.product.findMany({
           where,
-          skip: (parseInt(page) - 1) * parseInt(limit),
-          take: parseInt(limit),
+          skip: (pageNum - 1) * limitNum,
+          take: limitNum,
           include: { engine: true },
           orderBy: { createdAt: "desc" },
         }),
@@ -43,10 +46,10 @@ export default async function handler(req, res) {
       return res.status(200).json({
         data: products,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page: pageNum,
+          limit: limitNum,
           total,
-          totalPages: Math.ceil(total / parseInt(limit)),
+          totalPages: Math.ceil(total / limitNum),
         },
       });
 

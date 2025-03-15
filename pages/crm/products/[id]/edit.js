@@ -5,13 +5,13 @@ import { toast } from "react-toastify";
 import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { validateProduct } from "@/lib/utils/validation";
-import { useEngines } from "@/lib/hooks/useEngines";
+import { useAllEngines } from "@/lib/hooks/useAllEngines";
 import prisma from "@/lib/prisma";
 
 export default function EditProductPage({ initialProduct }) {
   const router = useRouter();
   const { id } = router.query;
-  const { engines, loading: enginesLoading } = useEngines();
+  const { engines, loading: enginesLoading } = useAllEngines();
 
   const [form, setForm] = useState({
     article: initialProduct?.article || "",
