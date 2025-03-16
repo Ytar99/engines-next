@@ -1,5 +1,5 @@
 // pages/crm/users/index.js
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useDebounce } from "react-use";
 import { Button, Box } from "@mui/material";
@@ -56,7 +56,7 @@ const UsersPage = () => {
     },
   ];
 
-  useDebounce(
+  const [_, cancelDebounce] = useDebounce(
     () => {
       users.setSearch(searchTerm); // Передаем новое значение поиска в хук
     },
@@ -77,6 +77,10 @@ const UsersPage = () => {
 
     setSelectedForDelete(null);
   };
+
+  useEffect(() => {
+    cancelDebounce();
+  }, [cancelDebounce]);
 
   return (
     <CrmLayout>

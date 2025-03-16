@@ -1,15 +1,18 @@
 // components/layouts/CrmLayout.js
-import { useState } from "react";
-import { Box, Drawer, useMediaQuery, useTheme } from "@mui/material";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import { toast } from "react-toastify";
+import { Box, Drawer } from "@mui/material";
 import CrmHeader from "@/components/crm/CrmHeader";
 import CrmSidebar from "@/components/crm/CrmSidebar";
 import AuthGuard from "@/components/crm/AuthGuard";
+import { ERRORS } from "@/lib/constants/errors";
 
 const drawerWidth = 240;
 
 export default function CrmLayout({ children }) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const router = useRouter();
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
@@ -27,6 +30,12 @@ export default function CrmLayout({ children }) {
     setIsClosing(true);
     setMobileOpen(false);
   };
+
+  useEffect(() => {
+    if (router.query.error) {
+      toast.error(ERRORS[router?.query?.error] || ERRORS.Default);
+    }
+  }, [router]);
 
   return (
     <AuthGuard>

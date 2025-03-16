@@ -1,3 +1,4 @@
+// pages\api\auth\[...nextauth].js
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
@@ -37,14 +38,22 @@ export default NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.user = user;
+      try {
+        if (user) token.user = user;
+        return token;
+      } catch (error) {
+        console.error("JWT Error:", error);
+        throw new Error("SESSION_ERROR");
       }
-      return token;
     },
     async session({ session, token }) {
-      session.user = token.user;
-      return session;
+      try {
+        session.user = token.user;
+        return session;
+      } catch (error) {
+        console.error("Session Error:", error);
+        throw new Error("SESSION_EXPIRED");
+      }
     },
   },
   session: {

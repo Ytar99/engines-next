@@ -1,14 +1,16 @@
 // pages/crm/login.js
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { getSession, signIn } from "next-auth/react";
-import { Box, TextField, Button, Typography, CircularProgress, Paper } from "@mui/material";
+import { toast } from "react-toastify";
+import { Box, TextField, Button, Typography, CircularProgress } from "@mui/material";
 import PublicLayout from "@/components/layouts/PublicLayout";
+import { ERRORS } from "@/lib/constants/errors";
 
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
@@ -17,7 +19,7 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setErrorMessage("");
 
     const result = await signIn("credentials", {
       redirect: false,
@@ -27,8 +29,8 @@ export default function LoginPage() {
 
     setLoading(false);
 
-    if (result?.error) {
-      setError("Неверные учетные данные: " + result.error);
+    if (!result?.ok && result?.error) {
+      setErrorMessage(ERRORS[result.error] || ERRORS.Default);
     } else {
       router.push("/crm/dashboard");
     }
@@ -40,6 +42,14 @@ export default function LoginPage() {
       [e.target.name]: e.target.value,
     });
   };
+
+  useEffect(() => {
+    const { error } = router.query;
+
+    if (error) {
+      toast.error(ERRORS[error] || ERRORS.Default);
+    }
+  }, [router.query]);
 
   return (
     <PublicLayout>
@@ -82,9 +92,9 @@ export default function LoginPage() {
           disabled={loading}
         />
 
-        {error && (
+        {errorMessage && (
           <Typography color="error" align="center">
-            {error}
+            {errorMessage}
           </Typography>
         )}
 

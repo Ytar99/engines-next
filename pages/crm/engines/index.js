@@ -1,5 +1,5 @@
 // pages/crm/engines/index.js
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useDebounce } from "react-use";
 import { Button, Box } from "@mui/material";
@@ -20,7 +20,7 @@ const EnginesPage = () => {
   const engines = useEngines();
   const deletedEngine = useEngine(initialFilters);
 
-  useDebounce(
+  const [_, cancelDebounce] = useDebounce(
     () => {
       engines.setSearch(searchTerm); // Передаем новое значение поиска в хук
     },
@@ -53,6 +53,10 @@ const EnginesPage = () => {
     const value = event.target.value;
     setSearchTerm(value);
   };
+
+  useEffect(() => {
+    cancelDebounce();
+  }, [cancelDebounce]);
 
   return (
     <CrmLayout>
