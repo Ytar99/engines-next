@@ -51,7 +51,7 @@ export default function CreateEnginePage() {
           <Button variant="contained" type="submit" disabled={loading}>
             {loading ? "Создание..." : "Создать"}
           </Button>
-          <Button variant="outlined" onClick={() => router.back()}>
+          <Button variant="outlined" disabled={loading} onClick={() => router.push("/crm/engines")}>
             Отмена
           </Button>
         </Box>

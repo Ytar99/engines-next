@@ -8,10 +8,11 @@ import CrmLayout from "@/components/layouts/CrmLayout";
 import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
 import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
-import { useProducts } from "@/lib/hooks/useProducts";
 import { useProduct } from "@/lib/hooks/useProduct";
 import { useAllEngines } from "@/lib/hooks/useAllEngines";
 import { Add as AddIcon } from "@mui/icons-material";
+import ProductService from "@/lib/api/products";
+import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
 
 function getSelectedProductString(product) {
   if (!product) {
@@ -27,7 +28,7 @@ const ProductsPage = () => {
   const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const products = useProducts();
+  const products = useFetchForTable({ initialFilters, getAll: ProductService.getAll });
   const engines = useAllEngines();
   const deletedProduct = useProduct(initialFilters);
 
@@ -115,7 +116,7 @@ const ProductsPage = () => {
 
       <DataTable
         columns={columns}
-        data={products.products}
+        data={products.data}
         pagination={products.pagination}
         loading={products.loading || deletedProduct.loading}
         getEditUrl={(productId) => `/crm/products/${productId}/edit`}

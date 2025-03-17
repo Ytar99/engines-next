@@ -4,12 +4,14 @@ import { toast } from "react-toastify";
 import { useDebounce } from "react-use";
 import { Button, Box } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import { useEngines } from "@/lib/hooks/useEngines";
+
 import { useEngine } from "@/lib/hooks/useEngine";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
 import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
+import EngineService from "@/lib/api/engines";
+import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
 
 const initialFilters = { engineId: "" };
 
@@ -17,7 +19,7 @@ const EnginesPage = () => {
   const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const engines = useEngines();
+  const engines = useFetchForTable({ initialFilters, getAll: EngineService.getAll });
   const deletedEngine = useEngine(initialFilters);
 
   const [_, cancelDebounce] = useDebounce(
@@ -82,7 +84,7 @@ const EnginesPage = () => {
 
       <DataTable
         columns={columns}
-        data={engines.engines}
+        data={engines.data}
         pagination={engines.pagination}
         loading={engines.loading || deletedEngine.loading}
         getEditUrl={(engineId) => `/crm/engines/${engineId}/edit`}

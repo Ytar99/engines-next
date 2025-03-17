@@ -48,7 +48,7 @@ export const DataTable = ({
                   {columns.map((column) => (
                     <TableCell key={column.field}>{column.header}</TableCell>
                   ))}
-                  {actions && <TableCell>Действия</TableCell>}
+                  {actions && <TableCell align="right">Действия</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -60,7 +60,7 @@ export const DataTable = ({
                       </TableCell>
                     ))}
                     {actions && (
-                      <TableCell>
+                      <TableCell align="right">
                         {getEditUrl && (
                           <IconButton href={getEditUrl(row.id)} size="small" disabled={loading}>
                             <EditIcon />

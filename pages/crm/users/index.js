@@ -6,11 +6,13 @@ import { Button, Box } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 
 import CrmLayout from "@/components/layouts/CrmLayout";
-import { useUsers } from "@/lib/hooks/useUsers";
+
 import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
 import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
 import { useUser } from "@/lib/hooks/useUser";
+import UserService from "@/lib/api/users";
+import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
 
 const initialFilters = { enabled: true };
 
@@ -18,7 +20,7 @@ const UsersPage = () => {
   const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const users = useUsers(initialFilters);
+  const users = useFetchForTable({ initialFilters, getAll: UserService.getAll });
   const deletedUser = useUser();
 
   const filtersConfig = [
@@ -106,7 +108,7 @@ const UsersPage = () => {
 
       <DataTable
         columns={columns}
-        data={users.users}
+        data={users.data}
         pagination={users.pagination}
         loading={users.loading || deletedUser.loading}
         getEditUrl={(userId) => {
