@@ -1,61 +1,56 @@
 import { useEffect, useState } from "react";
+import { useDebounce } from "react-use";
 import { Button, Box } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import CrmLayout from "@/components/layouts/CrmLayout";
-import { DataTable } from "@/components/crm/common/DataTable";
 import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
-
+import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
 import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
-import CustomerService from "@/lib/api/customers";
-import { useDebounce } from "react-use";
-import { useCustomer } from "@/lib/hooks/useCustomer";
+import { useEntity } from "@/lib/hooks/useEntity";
+import customerService from "@/lib/api/customerService";
 
 const initialFilters = {};
 
+const columns = [
+  { field: "id", header: "ID" },
+  {
+    field: "name",
+    header: "Имя",
+    render: (_, row) => [row.firstname, row.lastname].filter(Boolean).join(" ") || "—",
+  },
+  { field: "email", header: "Email" },
+  { field: "phone", header: "Телефон" },
+  {
+    field: "createdAt",
+    header: "Создан",
+    render: (value) => new Date(value).toLocaleString(),
+  },
+  {
+    field: "updatedAt",
+    header: "Изменен",
+    render: (value) => new Date(value).toLocaleString(),
+  },
+];
+
 const CustomersPage = () => {
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedForDelete, setSelectedForDelete] = useState(null);
-  const customers = useFetchForTable({ initialFilters, getAll: CustomerService.getAll });
-  const deletedCustomer = useCustomer();
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [_, cancelDebounce] = useDebounce(
-    () => {
-      customers.setSearch(searchTerm);
-    },
-    800,
-    [searchTerm]
-  );
+  const rows = useFetchForTable({ initialFilters, getAll: customerService.getAll });
+  const deletedEntity = useEntity(customerService);
 
-  const filtersConfig = [];
-
-  const columns = [
-    { field: "id", header: "ID" },
-    {
-      field: "name",
-      header: "Имя",
-      render: (_, row) => [row.firstname, row.lastname].filter(Boolean).join(" ") || "-",
-    },
-    { field: "email", header: "Email" },
-    { field: "phone", header: "Телефон" },
-    {
-      field: "createdAt",
-      header: "Создан",
-      render: (value) => new Date(value).toLocaleDateString(),
-    },
-  ];
+  const [_, cancelDebounce] = useDebounce(() => rows.setSearch(searchTerm), 800, [searchTerm]);
 
   const handleDelete = () => {
-    deletedCustomer.deleteCustomer(selectedForDelete?.id, () => {
-      customers.refetch();
+    deletedEntity.deleteItem(selectedForDelete?.id, () => {
+      rows.refetch();
     });
-
     setSelectedForDelete(null);
   };
 
   const handleSearchChange = (event) => {
-    const value = event.target.value;
-    setSearchTerm(value);
+    setSearchTerm(event.target.value);
   };
 
   useEffect(() => {
@@ -64,11 +59,13 @@ const CustomersPage = () => {
 
   return (
     <CrmLayout>
+      {rows.error && <div>Ошибка покупателей: {rows.error}</div>}
+
       <DataTableFilters
-        filtersConfig={filtersConfig}
+        filtersConfig={[]}
         initialFilters={initialFilters}
         searchTerm={searchTerm}
-        onFilterChange={customers.setFilters}
+        onFilterChange={rows.setFilters}
         onSearchChange={handleSearchChange}
       />
 
@@ -78,7 +75,7 @@ const CustomersPage = () => {
           color="success"
           startIcon={<AddIcon />}
           href="/crm/customers/create"
-          disabled={customers.loading || deletedCustomer.loading}
+          disabled={rows.loading}
         >
           Создать покупателя
         </Button>
@@ -86,12 +83,12 @@ const CustomersPage = () => {
 
       <DataTable
         columns={columns}
-        data={customers.data}
-        pagination={customers.pagination}
-        loading={customers.loading}
+        data={rows.data}
+        pagination={rows.pagination}
+        loading={rows.loading || deletedEntity.loading}
         getEditUrl={(id) => `/crm/customers/${id}/edit`}
-        onPageChange={customers.setPage}
-        onRowsPerPageChange={customers.setLimit}
+        onPageChange={(newPage) => rows.setPage(newPage + 1)}
+        onRowsPerPageChange={rows.setLimit}
         onDelete={setSelectedForDelete}
       />
 
@@ -99,7 +96,7 @@ const CustomersPage = () => {
         open={!!selectedForDelete}
         onClose={() => setSelectedForDelete(null)}
         onConfirm={handleDelete}
-        contentText={`Вы уверены, что хотите удалить покупателя "[${selectedForDelete?.id}] ${selectedForDelete?.email}"?`}
+        contentText={`Вы уверены, что хотите удалить покупателя #${selectedForDelete?.id} - ${selectedForDelete?.email}?`}
       />
     </CrmLayout>
   );

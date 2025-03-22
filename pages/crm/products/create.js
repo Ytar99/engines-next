@@ -1,14 +1,18 @@
 // pages/crm/products/create.js
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { toast } from "react-toastify";
 import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { validateProduct } from "@/lib/utils/validation";
 import { useAllEngines } from "@/lib/hooks/useAllEngines";
+import productService from "@/lib/api/productsService";
+import { useEntity } from "@/lib/hooks/useEntity";
+import { MAX_INT } from "@/lib/constants/numbers";
 
 export default function CreateProductPage() {
   const router = useRouter();
+  const { createItem, loading, error, setEntityState } = useEntity(productService);
+
   const engines = useAllEngines();
 
   const [form, setForm] = useState({
@@ -18,15 +22,30 @@ export default function CreateProductPage() {
     price: 0,
     count: 0,
     engineId: "",
-    // img: "",
   });
 
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const validation = validateProduct(form);
+    if (!validation.valid) {
+      return setEntityState((prev) => {
+        return { ...prev, error: validation.errors };
+      });
+    }
+
+    const submitData = {
+      article: form.article,
+      name: form.name,
+      description: form?.description || null,
+      price: form.price,
+      count: form.count,
+      engineId: form?.engineId || null,
+    };
+
+    createItem(submitData, () => {
+      router.push("/crm/products");
+    });
   };
 
   const handleNumberChange = (e) => {
@@ -35,42 +54,8 @@ export default function CreateProductPage() {
     setForm((prev) => ({ ...prev, [name]: isNaN(parsedValue) ? "" : parsedValue }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-
-    const validation = validateProduct(form);
-    if (!validation.valid) {
-      setError(validation.errors);
-      setSubmitting(false);
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/crm/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          engineId: form.engineId || null,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error);
-      }
-
-      const newProduct = await response.json();
-      toast.success("Продукт успешно создан!");
-      router.push(`/crm/products`);
-    } catch (error) {
-      setError(error.message);
-      toast.error(error.message);
-    } finally {
-      setSubmitting(false);
-    }
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   return (
@@ -79,62 +64,41 @@ export default function CreateProductPage() {
 
       <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 800, mt: 3 }}>
         <TextField
-          fullWidth
           required
+          fullWidth
+          size="small"
           label="Артикул"
           name="article"
+          margin="normal"
           value={form.article}
           onChange={handleChange}
-          margin="normal"
-          error={!!error?.includes("Артикул")}
-          helperText={error?.includes("Артикул") && "Неверный формат артикула"}
         />
 
         <TextField
-          fullWidth
           required
+          fullWidth
+          size="small"
+          margin="normal"
           label="Название"
           name="name"
           value={form.name}
           onChange={handleChange}
-          margin="normal"
         />
 
         <TextField
           fullWidth
           multiline
           rows={3}
+          size="small"
+          margin="normal"
           label="Описание"
           name="description"
           value={form.description}
           onChange={handleChange}
-          margin="normal"
         />
 
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, mt: 2 }}>
-          <TextField
-            fullWidth
-            required
-            label="Цена"
-            name="price"
-            type="number"
-            value={form.price}
-            onChange={handleNumberChange}
-            InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-          />
-
-          <TextField
-            fullWidth
-            required
-            label="Количество"
-            name="count"
-            type="number"
-            value={form.count}
-            onChange={handleNumberChange}
-            InputProps={{ inputProps: { min: 0 } }}
-          />
-
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Двигатель</InputLabel>
             <Select
               name="engineId"
@@ -146,36 +110,51 @@ export default function CreateProductPage() {
               <MenuItem value="">
                 <em>Не выбрано</em>
               </MenuItem>
-              {engines.engines.map((engine) => (
+              {engines.data.map((engine) => (
                 <MenuItem key={engine.id} value={engine.id}>
                   {engine.name}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
+
+          <TextField
+            required
+            fullWidth
+            size="small"
+            label="Цена"
+            name="price"
+            type="number"
+            value={form.price}
+            onChange={handleNumberChange}
+            InputProps={{ inputProps: { min: 0, max: MAX_INT, step: 0.01 } }}
+          />
+
+          <TextField
+            required
+            fullWidth
+            size="small"
+            label="Количество"
+            name="count"
+            type="number"
+            value={form.count}
+            onChange={handleNumberChange}
+            InputProps={{ inputProps: { min: 0, max: MAX_INT } }}
+          />
         </Box>
 
-        {/* <TextField
-          fullWidth
-          label="URL изображения"
-          name="img"
-          value={form.img}
-          onChange={handleChange}
-          margin="normal"
-        /> */}
-
         {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
+          <Alert severity="error" sx={{ my: 2 }}>
             {error}
           </Alert>
         )}
 
         <Box sx={{ mt: 3, display: "flex", gap: 2, justifyContent: "flex-end" }}>
-          <Button variant="outlined" onClick={() => router.push("/crm/products")} disabled={submitting}>
+          <Button variant="outlined" onClick={() => router.push("/crm/products")} disabled={loading}>
             Отмена
           </Button>
-          <Button type="submit" variant="contained" color="primary" disabled={submitting}>
-            {submitting ? "Создание..." : "Создать продукт"}
+          <Button type="submit" variant="contained" color="primary" disabled={loading}>
+            {loading ? "Создание..." : "Создать продукт"}
           </Button>
         </Box>
       </Box>

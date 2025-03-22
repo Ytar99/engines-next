@@ -1,48 +1,53 @@
 // pages/crm/products/[id]/edit.js
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
-import { toast } from "react-toastify";
 import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { validateProduct } from "@/lib/utils/validation";
 import { useAllEngines } from "@/lib/hooks/useAllEngines";
 import prisma from "@/lib/prisma";
+import { MAX_INT } from "@/lib/constants/numbers";
+import productService from "@/lib/api/productsService";
+import { useEntity } from "@/lib/hooks/useEntity";
 
-export default function EditProductPage({ initialProduct }) {
+export default function EditProductPage({ initialData }) {
   const router = useRouter();
   const { id } = router.query;
-  const { engines, loading: enginesLoading } = useAllEngines();
+
+  const { updateItem, loading, error, setEntityState } = useEntity(productService);
+
+  const engines = useAllEngines();
 
   const [form, setForm] = useState({
-    article: initialProduct?.article || "",
-    name: initialProduct?.name || "",
-    description: initialProduct?.description || "",
-    price: initialProduct?.price || 0,
-    count: initialProduct?.count || 0,
-    engineId: initialProduct?.engineId || "",
-    // img: initialProduct?.img || "",
+    article: initialData?.article || "",
+    name: initialData?.name || "",
+    description: initialData?.description || "",
+    price: initialData?.price || 0,
+    count: initialData?.count || 0,
+    engineId: initialData?.engineId || "",
   });
 
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  useEffect(() => {
-    if (initialProduct) {
-      setForm({
-        article: initialProduct.article,
-        name: initialProduct.name,
-        description: initialProduct.description,
-        price: initialProduct.price,
-        count: initialProduct.count,
-        engineId: initialProduct.engineId || "",
-        // img: initialProduct.img || "",
-      });
+    const validation = validateProduct(form, true);
+    if (!validation.valid) {
+      return setEntityState((prev) => ({ ...prev, error: validation.errors }));
     }
-  }, [initialProduct]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    // Подготовка данных для отправки
+    const submitData = {
+      article: form.article,
+      name: form.name,
+      description: form?.description || null,
+      price: form.price,
+      count: form.count,
+      engineId: form?.engineId || null,
+    };
+
+    await updateItem(id, submitData, () => {
+      router.push("/crm/products");
+    });
   };
 
   const handleNumberChange = (e) => {
@@ -51,59 +56,27 @@ export default function EditProductPage({ initialProduct }) {
     setForm((prev) => ({ ...prev, [name]: isNaN(parsedValue) ? "" : parsedValue }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-
-    const validation = validateProduct(form, true);
-    if (!validation.valid) {
-      setError(validation.errors);
-      setSubmitting(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/crm/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          engineId: form.engineId || null,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error);
-      }
-
-      toast.success("Продукт успешно обновлен!");
-      router.push("/crm/products");
-    } catch (error) {
-      setError(error.message);
-      toast.error(error.message);
-    } finally {
-      setSubmitting(false);
-    }
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  if (!initialProduct) return null;
+  if (!initialData) return null;
 
   return (
     <CrmLayout>
       <h1>Редактирование продукта</h1>
-      <h2>{`[${initialProduct.article}] ${initialProduct.name}`}</h2>
+      <h2>{`[${initialData.article}] ${initialData.name}`}</h2>
 
       <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 800, mt: 3 }}>
         <TextField
           fullWidth
           required
+          size="small"
+          margin="normal"
           label="Артикул"
           name="article"
           value={form.article}
           onChange={handleChange}
-          margin="normal"
           error={!!error?.includes("Артикул")}
           helperText={error?.includes("Артикул") && "Неверный формат артикула"}
         />
@@ -111,60 +84,66 @@ export default function EditProductPage({ initialProduct }) {
         <TextField
           fullWidth
           required
+          size="small"
+          margin="normal"
           label="Название"
           name="name"
           value={form.name}
           onChange={handleChange}
-          margin="normal"
         />
 
         <TextField
           fullWidth
+          size="small"
+          margin="normal"
           multiline
           minRows={3}
           label="Описание"
           name="description"
           value={form.description}
           onChange={handleChange}
-          margin="normal"
         />
 
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, mt: 2 }}>
           <TextField
-            fullWidth
             required
+            fullWidth
+            size="small"
+            margin="normal"
             label="Цена"
             name="price"
             type="number"
             value={form.price}
             onChange={handleNumberChange}
-            InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+            InputProps={{ inputProps: { min: 0, max: MAX_INT, step: 0.01 } }}
           />
 
           <TextField
-            fullWidth
             required
+            fullWidth
+            size="small"
+            margin="normal"
             label="Количество"
             name="count"
             type="number"
             value={form.count}
             onChange={handleNumberChange}
-            InputProps={{ inputProps: { min: 0 } }}
+            InputProps={{ inputProps: { min: 0, max: MAX_INT } }}
           />
 
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small" margin="normal">
             <InputLabel>Двигатель</InputLabel>
             <Select
               name="engineId"
               value={form.engineId}
               onChange={handleChange}
               label="Двигатель"
-              disabled={enginesLoading}
+              disabled={engines.loading}
             >
               <MenuItem value="">
                 <em>Не выбрано</em>
               </MenuItem>
-              {engines.map((engine) => (
+              {engines.data.map((engine) => (
                 <MenuItem key={engine.id} value={engine.id}>
                   {engine.name}
                 </MenuItem>
@@ -173,27 +152,18 @@ export default function EditProductPage({ initialProduct }) {
           </FormControl>
         </Box>
 
-        {/* <TextField
-          fullWidth
-          label="URL изображения"
-          name="img"
-          value={form.img}
-          onChange={handleChange}
-          margin="normal"
-        /> */}
-
         {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
+          <Alert severity="error" sx={{ my: 2 }}>
             {error}
           </Alert>
         )}
 
         <Box sx={{ mt: 3, display: "flex", gap: 2, justifyContent: "flex-end" }}>
-          <Button variant="outlined" onClick={() => router.push("/crm/products")} disabled={submitting}>
+          <Button variant="outlined" onClick={() => router.push("/crm/products")} disabled={loading}>
             Отмена
           </Button>
-          <Button type="submit" variant="contained" color="primary" disabled={submitting}>
-            {submitting ? "Сохранение..." : "Сохранить изменения"}
+          <Button type="submit" variant="contained" color="primary" disabled={loading}>
+            {loading ? "Сохранение..." : "Сохранить изменения"}
           </Button>
         </Box>
       </Box>
@@ -205,30 +175,25 @@ export async function getServerSideProps(context) {
   const { id } = context.params;
 
   try {
-    const product = await prisma.product.findUnique({
+    const data = await prisma.product.findUnique({
       where: { id: parseInt(id) },
       include: { engine: true },
     });
 
-    if (!product) {
-      return {
-        redirect: {
-          destination: "/crm/products",
-          permanent: false,
-        },
-      };
+    if (!data) {
+      throw new Error("Запись не найдена");
     }
 
     return {
       props: {
-        initialProduct: JSON.parse(JSON.stringify(product)),
+        initialData: JSON.parse(JSON.stringify(data)),
       },
     };
   } catch (error) {
     console.error("Error fetching product:", error);
     return {
       redirect: {
-        destination: "/crm/products",
+        destination: "/crm/products?error=EntityNotFound",
         permanent: false,
       },
     };

@@ -1,18 +1,16 @@
 // pages/crm/users/index.js
-
 import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "react-use";
-import { toast } from "react-toastify";
 import { Box, Button } from "@mui/material";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
 import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
-import { useProduct } from "@/lib/hooks/useProduct";
 import { useAllEngines } from "@/lib/hooks/useAllEngines";
 import { Add as AddIcon } from "@mui/icons-material";
-import ProductService from "@/lib/api/products";
 import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
+import productService from "@/lib/api/productsService";
+import { useEntity } from "@/lib/hooks/useEntity";
 
 function getSelectedProductString(product) {
   if (!product) {
@@ -28,19 +26,17 @@ const ProductsPage = () => {
   const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const products = useFetchForTable({ initialFilters, getAll: ProductService.getAll });
+  const rows = useFetchForTable({ initialFilters, getAll: productService.getAll });
+  const deletedEntity = useEntity(productService);
+
   const engines = useAllEngines();
-  const deletedProduct = useProduct(initialFilters);
 
-  const [_, cancelDebounce] = useDebounce(
-    () => {
-      products.setSearch(searchTerm); // Передаем новое значение поиска в хук
-    },
-    800,
-    [searchTerm]
+  const [_, cancelDebounce] = useDebounce(() => rows.setSearch(searchTerm), 800, [searchTerm]);
+
+  const enginesOptions = useMemo(
+    () => engines.data.map((engine) => ({ value: engine.id, label: engine.name })),
+    [engines.data]
   );
-
-  const enginesOptions = engines?.engines.map((engine) => ({ value: engine.id, label: engine.name }));
 
   const filtersConfig = useMemo(
     () => [
@@ -54,27 +50,29 @@ const ProductsPage = () => {
     [enginesOptions]
   );
 
-  const columns = [
-    { field: "article", header: "Артикул" },
-    { field: "name", header: "Название" },
-    // { field: "description", header: "Описание" },
-    {
-      field: "engineId",
-      header: "Двигатель",
-      render: (value) => engines.engines.find((engine) => engine.id === value)?.name,
-    },
-    {
-      field: "price",
-      header: "Цена",
-      render: (value) => `${value.toLocaleString()} ₽`,
-    },
-    { field: "count", header: "Остаток" },
-  ];
+  const columns = useMemo(
+    () => [
+      { field: "article", header: "Артикул" },
+      { field: "name", header: "Название" },
+      // { field: "description", header: "Описание" },
+      {
+        field: "engineId",
+        header: "Двигатель",
+        render: (value) => engines.data.find((engine) => engine.id === value)?.name,
+      },
+      {
+        field: "price",
+        header: "Цена",
+        render: (value) => `${value.toLocaleString()} ₽`,
+      },
+      { field: "count", header: "Остаток" },
+    ],
+    [engines.data]
+  );
 
   const handleDelete = () => {
-    deletedProduct.deleteProduct(selectedForDelete?.id, () => {
-      toast.success("Продукт удалён");
-      products.refetch();
+    deletedEntity.deleteItem(selectedForDelete?.id, () => {
+      rows.refetch();
     });
 
     setSelectedForDelete(null);
@@ -91,15 +89,15 @@ const ProductsPage = () => {
 
   return (
     <CrmLayout>
-      {products.error && <div>Ошибка продуктов: {products.error}</div>}
+      {rows.error && <div>Ошибка продуктов: {rows.error}</div>}
       {engines.error && <div>Ошибка двигателей: {engines.error}</div>}
 
       <DataTableFilters
         filtersConfig={filtersConfig}
         initialFilters={initialFilters}
         searchTerm={searchTerm}
-        onFilterChange={products.setFilters}
-        onSearchChange={handleSearchChange} // Передаем обработчик изменений поиска
+        onFilterChange={rows.setFilters}
+        onSearchChange={handleSearchChange}
       />
 
       <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
@@ -108,22 +106,23 @@ const ProductsPage = () => {
           color="success"
           startIcon={<AddIcon />}
           href="/crm/products/create"
-          disabled={products.loading}
+          disabled={rows.loading}
         >
-          Создать продукта
+          Создать продукт
         </Button>
       </Box>
 
       <DataTable
         columns={columns}
-        data={products.data}
-        pagination={products.pagination}
-        loading={products.loading || deletedProduct.loading}
+        data={rows.data}
+        pagination={rows.pagination}
+        loading={rows.loading || deletedEntity.loading}
         getEditUrl={(productId) => `/crm/products/${productId}/edit`}
-        onPageChange={products.setPage}
-        onRowsPerPageChange={products.setLimit}
+        onPageChange={(newPage) => rows.setPage(newPage + 1)}
+        onRowsPerPageChange={rows.setLimit}
         onDelete={setSelectedForDelete}
       />
+
       <ConfirmationDialog
         open={!!selectedForDelete}
         onClose={() => setSelectedForDelete(null)}

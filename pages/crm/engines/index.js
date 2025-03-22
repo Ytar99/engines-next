@@ -1,51 +1,40 @@
 // pages/crm/engines/index.js
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
 import { useDebounce } from "react-use";
 import { Button, Box } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-
-import { useEngine } from "@/lib/hooks/useEngine";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
 import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
-import EngineService from "@/lib/api/engines";
 import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
+import engineService from "@/lib/api/engineService";
+import { useEntity } from "@/lib/hooks/useEntity";
 
 const initialFilters = { engineId: "" };
+
+const columns = [
+  { field: "id", header: "ID" },
+  { field: "name", header: "Название" },
+  {
+    field: "productsCount",
+    header: "Продукты",
+    render: (_, row) => row.products?.length || 0,
+  },
+];
 
 const EnginesPage = () => {
   const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const engines = useFetchForTable({ initialFilters, getAll: EngineService.getAll });
-  const deletedEngine = useEngine(initialFilters);
+  const rows = useFetchForTable({ initialFilters, getAll: engineService.getAll });
+  const deletedEntity = useEntity(engineService);
 
-  const [_, cancelDebounce] = useDebounce(
-    () => {
-      engines.setSearch(searchTerm); // Передаем новое значение поиска в хук
-    },
-    800,
-    [searchTerm]
-  );
-
-  const filtersConfig = [];
-
-  const columns = [
-    { field: "id", header: "ID" },
-    { field: "name", header: "Название" },
-    {
-      field: "productsCount",
-      header: "Продукты",
-      render: (_, row) => row.products?.length || 0,
-    },
-  ];
+  const [_, cancelDebounce] = useDebounce(() => rows.setSearch(searchTerm), 800, [searchTerm]);
 
   const handleDelete = () => {
-    deletedEngine.deleteEngine(selectedForDelete?.id, () => {
-      toast.success("Двигатель удалён");
-      engines.refetch();
+    deletedEntity.deleteItem(selectedForDelete?.id, () => {
+      rows.refetch();
     });
 
     setSelectedForDelete(null);
@@ -62,11 +51,13 @@ const EnginesPage = () => {
 
   return (
     <CrmLayout>
+      {rows.error && <div>Ошибка двигателей: {rows.error}</div>}
+
       <DataTableFilters
-        filtersConfig={filtersConfig}
+        filtersConfig={[]}
         initialFilters={initialFilters}
         searchTerm={searchTerm}
-        onFilterChange={engines.setFilters}
+        onFilterChange={rows.setFilters}
         onSearchChange={handleSearchChange}
       />
 
@@ -76,7 +67,7 @@ const EnginesPage = () => {
           color="success"
           startIcon={<AddIcon />}
           href="/crm/engines/create"
-          disabled={engines.loading}
+          disabled={rows.loading}
         >
           Создать двигатель
         </Button>
@@ -84,12 +75,12 @@ const EnginesPage = () => {
 
       <DataTable
         columns={columns}
-        data={engines.data}
-        pagination={engines.pagination}
-        loading={engines.loading || deletedEngine.loading}
+        data={rows.data}
+        pagination={rows.pagination}
+        loading={rows.loading || deletedEntity.loading}
         getEditUrl={(engineId) => `/crm/engines/${engineId}/edit`}
-        onPageChange={engines.setPage}
-        onRowsPerPageChange={engines.setLimit}
+        onPageChange={(newPage) => rows.setPage(newPage + 1)}
+        onRowsPerPageChange={rows.setLimit}
         onDelete={setSelectedForDelete}
       />
 
