@@ -60,7 +60,7 @@ export default function CreateProductPage() {
 
   return (
     <CrmLayout>
-      <h1>Создание нового продукта</h1>
+      <h1>Создание нового товара</h1>
 
       <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 800, mt: 3 }}>
         <TextField
@@ -154,7 +154,7 @@ export default function CreateProductPage() {
             Отмена
           </Button>
           <Button type="submit" variant="contained" color="primary" disabled={loading}>
-            {loading ? "Создание..." : "Создать продукт"}
+            {loading ? "Создание..." : "Создать товар"}
           </Button>
         </Box>
       </Box>

@@ -5,7 +5,6 @@ const { PrismaClient } = require("@prisma/client");
 const USER_ROLES = Object.freeze({
   ADMIN: "ADMIN",
   USER: "USER",
-  GUEST: "GUEST",
 });
 
 const prisma = new PrismaClient();
@@ -97,7 +96,7 @@ async function main() {
     }
   }
 
-  // Создание продуктов
+  // Создание товаров
   const products = generateRandomProducts(63);
 
   for (const product of products) {
@@ -120,7 +119,7 @@ async function main() {
           engineId: engine?.id,
         },
       });
-      console.log(`Продукт ${product.name} создан`);
+      console.log(`Товар ${product.name} создан`);
     }
   }
 
@@ -151,7 +150,7 @@ async function main() {
     }
   }
 
-  // Создание заказов
+  // Создание заявок
   const allCustomers = await prisma.customer.findMany();
   const statuses = ["Completed", "Processing", "Cancelled"];
 
@@ -171,16 +170,16 @@ async function main() {
 
     if (!exists) {
       await prisma.order.create({ data: order });
-      console.log(`Заказ для клиента ${order.customerId} создан`);
+      console.log(`Заявка для клиента ${order.customerId} создана`);
     }
   }
 
-  // Создание связей заказ-продукт
+  // Создание связей заявка-товар
   const allOrders = await prisma.order.findMany();
   const allProducts = await prisma.product.findMany();
 
   for (const order of allOrders) {
-    const productsToConnect = allProducts.slice(0, 2); // Берем первые 2 продукта
+    const productsToConnect = allProducts.slice(0, 2); // Берем первые 2 товара
 
     for (const product of productsToConnect) {
       const exists = await prisma.orderProduct.findUnique({
@@ -200,7 +199,7 @@ async function main() {
             count: Math.floor(Math.random() * 5) + 1,
           },
         });
-        console.log(`Связь заказа ${order.id} с продуктом ${product.id} создана`);
+        console.log(`Связь заявки ${order.id} с товаром ${product.id} создана`);
       }
     }
   }

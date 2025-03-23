@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         },
       });
 
-      if (!order) return res.status(404).json({ error: "Заказ не найден" });
+      if (!order) return res.status(404).json({ error: "Заявка не найдена" });
 
       // Transform products data
       const transformedProducts = order.products.map((op) => ({
@@ -61,19 +61,16 @@ export default async function handler(req, res) {
       });
 
       if (!existingOrder) {
-        return res.status(404).json({ error: "Заказ не найден" });
+        return res.status(404).json({ error: "Заявка не найдена" });
       }
 
-      const { customerId, status, products } = req.body;
-      const errors = [];
+      const data = req.body;
+      const { customerId, status, products } = data;
 
-      // Validation
-      if (!customerId) errors.push("Не указан покупатель");
-      if (!validateOrderStatus(status)) errors.push("Неверный статус заказа");
-      if (!products || products.length === 0) errors.push("Добавьте товары в заказ");
-
-      if (errors.length > 0) {
-        return res.status(400).json({ error: errors.join(", ") });
+      // Валидация базовой структуры
+      const validation = validateOrder(data);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.errors });
       }
 
       // Check customer exists
@@ -151,7 +148,7 @@ export default async function handler(req, res) {
     console.error("Order API error:", error);
 
     if (error.code === "P2025") {
-      return res.status(404).json({ error: "Заказ не найден" });
+      return res.status(404).json({ error: "Заявка не найдена" });
     }
 
     return res.status(500).json({

@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // Поиск по ID заказа или email клиента
+      // Поиск по ID заявки или email клиента
       if (searchTerm) {
         const searchFilters = [];
 
@@ -129,10 +129,10 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: stockValidation.errors });
       }
 
-      // Создание заказа в транзакции
+      // Создание заявки в транзакции
       try {
         const newOrder = await prisma.$transaction(async (tx) => {
-          // Создаем заказ с продуктами
+          // Создаем заявку с товарах
           const order = await tx.order.create({
             data: {
               customerId: data.customerId,

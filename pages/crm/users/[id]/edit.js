@@ -20,6 +20,7 @@ import PhoneMask from "@/components/ui/fields/PhoneInput";
 import { validateUser } from "@/lib/utils/validation";
 import userService from "@/lib/api/userService";
 import prisma from "@/lib/prisma";
+import { formatPhone } from "@/lib/utils/formatter";
 
 export default function EditUserPage({ initialData }) {
   const router = useRouter();

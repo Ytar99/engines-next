@@ -18,7 +18,7 @@ const columns = [
   { field: "name", header: "Название" },
   {
     field: "productsCount",
-    header: "Продукты",
+    header: "Товары",
     render: (_, row) => row.products?.length || 0,
   },
 ];

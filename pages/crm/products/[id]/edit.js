@@ -64,7 +64,7 @@ export default function EditProductPage({ initialData }) {
 
   return (
     <CrmLayout>
-      <h1>Редактирование продукта</h1>
+      <h1>Редактирование товара</h1>
       <h2>{`[${initialData.article}] ${initialData.name}`}</h2>
 
       <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 800, mt: 3 }}>

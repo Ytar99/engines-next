@@ -34,7 +34,7 @@ export const DataTable = ({
   const theme = useTheme();
 
   const handleChangePage = (event, newPage) => {
-    onPageChange(newPage + 1);
+    onPageChange(newPage);
   };
 
   const handleChangeRowsPerPage = (event) => {

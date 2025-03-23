@@ -13,7 +13,7 @@ export default async function handler(req, res) {
         include: { engine: true },
       });
 
-      return product ? res.status(200).json({ data: product }) : res.status(404).json({ error: "Продукт не найден" });
+      return product ? res.status(200).json({ data: product }) : res.status(404).json({ error: "Товар не найден" });
 
       // UPDATE PRODUCT
     } else if (req.method === "PUT") {
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       });
 
       if (!existingProduct) {
-        return res.status(404).json({ error: "Продукт не найден" });
+        return res.status(404).json({ error: "Товар не найден" });
       }
 
       const validation = validateProduct(req.body, true);
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
     console.error("Product API error:", error);
 
     if (error.code === "P2025") {
-      return res.status(404).json({ error: "Продукт не найден" });
+      return res.status(404).json({ error: "Товар не найден" });
     }
 
     return res.status(500).json({ error: "Внутренняя ошибка сервера" });

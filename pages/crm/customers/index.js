@@ -9,6 +9,7 @@ import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
 import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
 import { useEntity } from "@/lib/hooks/useEntity";
 import customerService from "@/lib/api/customerService";
+import { formatPhone } from "@/lib/utils/formatter";
 
 const initialFilters = {};
 
@@ -20,7 +21,7 @@ const columns = [
     render: (_, row) => [row.firstname, row.lastname].filter(Boolean).join(" ") || "—",
   },
   { field: "email", header: "Email" },
-  { field: "phone", header: "Телефон" },
+  { field: "phone", header: "Телефон", render: (_, row) => formatPhone(row.phone) },
   {
     field: "createdAt",
     header: "Создан",
@@ -87,6 +88,7 @@ const CustomersPage = () => {
         pagination={rows.pagination}
         loading={rows.loading || deletedEntity.loading}
         getEditUrl={(id) => `/crm/customers/${id}/edit`}
+        getOpenUrl={(id) => `/crm/customers/${id}`}
         onPageChange={(newPage) => rows.setPage(newPage + 1)}
         onRowsPerPageChange={rows.setLimit}
         onDelete={setSelectedForDelete}

@@ -12,6 +12,7 @@ import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
 import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
 import userService from "@/lib/api/userService";
 import { useEntity } from "@/lib/hooks/useEntity";
+import { formatPhone } from "@/lib/utils/formatter";
 
 const initialFilters = { enabled: true };
 
@@ -42,7 +43,7 @@ const columns = [
     render: (_, row) => [row.firstname, row.lastname].filter(Boolean).join(" "),
   },
   { field: "email", header: "Email" },
-  { field: "phone", header: "Телефон" },
+  { field: "phone", header: "Телефон", render: (_, row) => formatPhone(row.phone) },
   { field: "role", header: "Роль" },
   {
     field: "enabled",
@@ -79,7 +80,7 @@ const UsersPage = () => {
 
   return (
     <CrmLayout>
-      {rows.error && <div>Ошибка продуктов: {rows.error}</div>}
+      {rows.error && <div>Ошибка товаров: {rows.error}</div>}
 
       <DataTableFilters
         filtersConfig={filtersConfig}

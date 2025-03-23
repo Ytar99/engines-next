@@ -69,7 +69,7 @@ export const UserTable = ({
           component="div"
           count={totalUsers}
           page={page}
-          onPageChange={(e, newPage) => setPage(newPage)}
+          onPageChange={(e, newPage) => setPage(newPage + 1)}
           rowsPerPage={rowsPerPage}
           labelDisplayedRows={({ from, to, count }) => `${from}–${to} из ${count}`}
           labelRowsPerPage="Записей на странице:"

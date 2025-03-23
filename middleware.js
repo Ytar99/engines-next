@@ -15,7 +15,11 @@ export async function middleware(request) {
       return NextResponse.json({ error: "AccessDenied" }, { status: 403 });
     }
 
-    return redirectWithError(request, "AccessDenied", "/crm/dashboard");
+    if (userRole) {
+      return redirectWithError(request, "AccessDenied", "/crm/dashboard");
+    }
+
+    return redirectWithError(request, "AccessDenied");
   }
 
   // if (path === "/") {

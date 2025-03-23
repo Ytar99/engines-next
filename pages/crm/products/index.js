@@ -89,7 +89,7 @@ const ProductsPage = () => {
 
   return (
     <CrmLayout>
-      {rows.error && <div>Ошибка продуктов: {rows.error}</div>}
+      {rows.error && <div>Ошибка товаров: {rows.error}</div>}
       {engines.error && <div>Ошибка двигателей: {engines.error}</div>}
 
       <DataTableFilters
@@ -108,7 +108,7 @@ const ProductsPage = () => {
           href="/crm/products/create"
           disabled={rows.loading}
         >
-          Создать продукт
+          Создать товар
         </Button>
       </Box>
 
@@ -127,7 +127,7 @@ const ProductsPage = () => {
         open={!!selectedForDelete}
         onClose={() => setSelectedForDelete(null)}
         onConfirm={handleDelete}
-        contentText={`Вы уверены, что хотите удалить продукт "${getSelectedProductString(selectedForDelete)}"?`}
+        contentText={`Вы уверены, что хотите удалить товар "${getSelectedProductString(selectedForDelete)}"?`}
       />
     </CrmLayout>
   );

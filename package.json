@@ -8,6 +8,7 @@
     "start": "dotenv -c -- next start",
     "lint": "next lint",
     "seed": "node prisma/seed.js",
+    "seedProd": "node prisma/seedProd.js",
     "migrate": "npx prisma migrate dev"
   },
   "dependencies": {
