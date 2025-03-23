@@ -11,6 +11,7 @@
     "migrate": "npx prisma migrate dev"
   },
   "dependencies": {
+    "@date-io/date-fns": "^3.2.1",
     "@emotion/cache": "^11.14.0",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.14.0",
@@ -20,11 +21,13 @@
     "@prisma/client": "^6.4.1",
     "axios": "^1.8.2",
     "bcrypt": "^5.1.1",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "dotenv-cli": "^8.0.0",
     "next": "15.2.1",
     "next-auth": "^4.24.11",
     "react": "^19.0.0",
+    "react-datepicker": "^8.2.1",
     "react-dom": "^19.0.0",
     "react-imask": "^7.6.1",
     "react-toastify": "^11.0.5",

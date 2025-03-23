@@ -2,11 +2,17 @@ import { ToastContainer } from "react-toastify";
 import { SessionProvider } from "next-auth/react";
 import { AppCacheProvider } from "@mui/material-nextjs/v15-pagesRouter";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { CssBaseline } from "@mui/material";
-
+import { alpha, CssBaseline } from "@mui/material";
 import { Roboto } from "next/font/google";
 
+import { registerLocale } from "react-datepicker";
+import ru from "date-fns/locale/ru";
+
+registerLocale("ru", ru);
+
 import "@/styles/globals.css";
+import "react-datepicker/dist/react-datepicker.css";
+import "@/styles/datepicker.css";
 
 const roboto = Roboto({
   weight: ["300", "400", "500", "700"],
@@ -24,6 +30,43 @@ const theme = createTheme({
         },
       },
     },
+    MuiCssBaseline: {
+      styleOverrides: (theme) => `
+        :root {
+          --datepicker-font-family: ${theme.typography.fontFamily};
+          --datepicker-font-size: ${theme.typography.caption.fontSize};
+          --datepicker-header-font-size: ${theme.typography.body1.fontSize};
+          --datepicker-bg: ${theme.palette.background.paper};
+          --datepicker-text-color: ${theme.palette.text.primary};
+          --datepicker-border-color: ${theme.palette.divider};
+          --datepicker-border-radius: ${theme.shape.borderRadius}px;
+          --datepicker-header-bg: ${theme.palette.background.default};
+          --datepicker-header-text-color: ${theme.palette.text.primary};
+          --datepicker-arrow-color: ${theme.palette.text.disabled};
+          --datepicker-arrow-hover-color: ${theme.palette.text.secondary};
+          --datepicker-selected-bg: ${theme.palette.primary.main};
+          --datepicker-selected-text-color: ${theme.palette.primary.contrastText};
+          --datepicker-selected-hover-bg: ${theme.palette.primary.dark};
+          --datepicker-hover-bg: ${theme.palette.grey[500]};
+          --datepicker-highlighted-bg: ${theme.palette.success.main};
+          --datepicker-highlighted-text-color: ${theme.palette.success.contrastText};
+          --datepicker-highlighted-hover-bg: ${theme.palette.success.dark};
+          --datepicker-holiday-bg: ${theme.palette.warning.main};
+          --datepicker-holiday-text-color: ${theme.palette.warning.contrastText};
+          --datepicker-holiday-hover-bg: ${theme.palette.warning.dark};
+          --datepicker-in-range-bg: ${alpha(theme.palette.primary.main, 0.5)};
+          --datepicker-keyboard-selected-bg: ${theme.palette.primary.light};
+          --datepicker-keyboard-selected-text-color: ${theme.palette.text.primary};
+          --datepicker-disabled-color: ${theme.palette.text.disabled};
+          --datepicker-overlay-bg: ${theme.palette.grey[900]};
+          --datepicker-overlay-text-color: ${theme.palette.common.white};
+          --datepicker-close-icon-bg: ${theme.palette.primary.main};
+          --datepicker-close-icon-text-color: ${theme.palette.primary.contrastText};
+          --datepicker-close-icon-disabled-bg: ${theme.palette.text.disabled};
+          --datepicker-portal-bg: ${theme.palette.grey[800]};
+        }
+      `,
+    },
   },
 
   typography: {
@@ -32,33 +75,9 @@ const theme = createTheme({
   cssVariables: {
     colorSchemeSelector: "class",
   },
-  // palette: {
-  //   mode: "light",
-  //   primary: {
-  //     main: "#000000",
-  //   },
-  //   secondary: {
-  //     main: "#f50057",
-  //   },
-  // },
   colorSchemes: {
     light: {},
     dark: {},
-  },
-  palette: {
-    // mode: "light",
-    // primary: {
-    //   main: "#2D3436", // Тёмно-графитовый (основные кнопки, заголовки)
-    //   contrastText: "#FFFFFF",
-    // },
-    // secondary: {
-    //   main: "#636E72", // Мягкий серый (второстепенные элементы)
-    //   contrastText: "#FFFFFF",
-    // },
-    // background: {
-    //   default: "#F5F5F5", // Светло-серый (фон страницы)
-    //   paper: "#FFFFFF", // Белый (карточки товаров)
-    // },
   },
 });
 

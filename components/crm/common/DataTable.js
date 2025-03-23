@@ -10,9 +10,11 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  useTheme,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import LaunchIcon from "@mui/icons-material/Launch";
 
 export const DataTable = ({
   columns,
@@ -22,11 +24,14 @@ export const DataTable = ({
   onPageChange,
   onRowsPerPageChange,
   getEditUrl,
+  getOpenUrl,
   onEdit,
   onDelete,
   actions = true,
 }) => {
   const { page, limit, total, totalPages } = pagination || {};
+
+  const theme = useTheme();
 
   const handleChangePage = (event, newPage) => {
     onPageChange(newPage + 1);
@@ -46,7 +51,18 @@ export const DataTable = ({
               <TableHead>
                 <TableRow>
                   {columns.map((column) => (
-                    <TableCell key={column.field}>{column.header}</TableCell>
+                    <TableCell
+                      key={column.field}
+                      align={column.headerAlign || "left"}
+                      sx={{
+                        width: column.width,
+                        minWidth: column.minWidth,
+                        bgcolor: theme.palette.background.default,
+                        ...column.headerSx,
+                      }}
+                    >
+                      {column.header}
+                    </TableCell>
                   ))}
                   {actions && <TableCell align="right">Действия</TableCell>}
                 </TableRow>
@@ -55,12 +71,25 @@ export const DataTable = ({
                 {data.map((row) => (
                   <TableRow key={row.id}>
                     {columns.map((column) => (
-                      <TableCell key={column.field}>
-                        {column.render ? column.render(row[column.field], row) : row[column.field]}
+                      <TableCell
+                        key={column.field}
+                        align={column.align || "left"}
+                        sx={{
+                          width: column.width,
+                          minWidth: column.minWidth,
+                          ...column.cellSx,
+                        }}
+                      >
+                        {column.render ? column.render(row[column.field], row) : row[column.field] || "—"}
                       </TableCell>
                     ))}
                     {actions && (
                       <TableCell align="right">
+                        {getOpenUrl && (
+                          <IconButton href={getOpenUrl(row.id)} size="small" disabled={loading}>
+                            <LaunchIcon />
+                          </IconButton>
+                        )}
                         {getEditUrl && (
                           <IconButton href={getEditUrl(row.id)} size="small" disabled={loading}>
                             <EditIcon />

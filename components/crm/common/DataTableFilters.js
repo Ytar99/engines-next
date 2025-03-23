@@ -2,6 +2,7 @@
 import { useState } from "react";
 import {
   Box,
+  Button,
   Checkbox,
   FormControl,
   FormControlLabel,
@@ -14,8 +15,16 @@ import {
 import { Search as SearchIcon } from "@mui/icons-material";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
+import DateRangePicker from "@/components/crm/common/DateRangePicker";
 
-export const DataTableFilters = ({ filtersConfig, initialFilters, onFilterChange, searchTerm, onSearchChange }) => {
+export const DataTableFilters = ({
+  filtersConfig,
+  initialFilters,
+  onFilterChange,
+  searchTerm,
+  onSearchChange,
+  onResetFilters,
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -28,6 +37,10 @@ export const DataTableFilters = ({ filtersConfig, initialFilters, onFilterChange
 
     if (type === "checkbox") {
       newValue = checked;
+    }
+
+    if (type === "dateRange") {
+      newValue = [value.startDate, value.endDate];
     }
 
     setFilters({ ...filters, [name]: newValue });
@@ -44,7 +57,7 @@ export const DataTableFilters = ({ filtersConfig, initialFilters, onFilterChange
               label={filter.label}
               name={filter.name}
               value={filters[filter.name] || ""}
-              onChange={handleFiltersChange}
+              onChange={filter.onChange ? filter.onChange : handleFiltersChange}
             >
               {filter.options.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -60,9 +73,31 @@ export const DataTableFilters = ({ filtersConfig, initialFilters, onFilterChange
           <FormControlLabel
             key={filter.name}
             control={
-              <Checkbox name={filter.name} checked={filters[filter.name] || false} onChange={handleFiltersChange} />
+              <Checkbox
+                name={filter.name}
+                checked={filters[filter.name] || false}
+                onChange={filter.onChange ? filter.onChange : handleFiltersChange}
+              />
             }
             label={filter.label}
+          />
+        );
+
+      case "dateRange":
+        return (
+          <DateRangePicker
+            key={filter.name}
+            label={filter.label}
+            value={filters[filter.name] || [null, null]}
+            onChange={(newValue) => {
+              filter.onChange
+                ? filter.onChange({ target: { name: filter.name, value: newValue } })
+                : handleFiltersChange({ target: { name: filter.name, value: newValue } });
+
+              // setFilters({ ...filters, [filter.name]: newValue });
+              // onFilterChange({ [filter.name]: newValue });
+            }}
+            size="small"
           />
         );
 
@@ -75,7 +110,7 @@ export const DataTableFilters = ({ filtersConfig, initialFilters, onFilterChange
             label={filter.label}
             name={filter.name}
             value={filters[filter.name] || ""}
-            onChange={handleFiltersChange}
+            onChange={filter.onChange ? filter.onChange : handleFiltersChange}
             size="small"
           />
         );
@@ -101,6 +136,13 @@ export const DataTableFilters = ({ filtersConfig, initialFilters, onFilterChange
         }}
       />
       {filtersConfig.map((filter) => renderFilterComponent(filter))}
+      {onResetFilters && (
+        <Box>
+          <Button onClick={onResetFilters} variant="outlined">
+            Сбросить
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };

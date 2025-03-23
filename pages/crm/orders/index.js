@@ -1,56 +1,164 @@
 // pages/crm/orders/index.js
-import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "react-use";
-import { Button, Box } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
-
-import { useOrder } from "@/lib/hooks/useOrder";
+import { Box, Button, Chip, Typography } from "@mui/material";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { DataTableFilters } from "@/components/crm/common/DataTableFilters";
 import { DataTable } from "@/components/crm/common/DataTable";
 import { ConfirmationDialog } from "@/components/crm/common/ConfirmationDialog";
-import OrderService from "@/lib/api/orders";
+import { Add as AddIcon } from "@mui/icons-material";
 import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
+import orderService from "@/lib/api/orderService";
+import { useEntity } from "@/lib/hooks/useEntity";
+import { STATUS_OPTIONS, STATUS_COLORS, STATUS_OPTIONS_OBJ } from "@/lib/constants/order";
+import { formatCurrency } from "@/lib/utils/formatter";
 
-const initialFilters = {};
+const initialFilters = {
+  status: "",
+  customerEmail: "",
+  dateRange: [null, null],
+  search: "",
+};
+
+const handleTransformFilters = (filters) => {
+  return {
+    status: filters.status,
+    customerEmail: filters.customerEmail,
+    search: filters.search,
+    startDate: filters.dateRange[0]?.toISOString(),
+    endDate: filters.dateRange[1]?.toISOString(),
+  };
+};
 
 const OrdersPage = () => {
   const [selectedForDelete, setSelectedForDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const orders = useFetchForTable({ initialFilters, getAll: OrderService.getAll });
-  const deleteOrder = useOrder(initialFilters);
+  const orders = useFetchForTable({
+    initialFilters,
+    getAll: orderService.getAll,
+    transformFilters: handleTransformFilters,
+  });
 
-  const [_, cancelDebounce] = useDebounce(
-    () => {
-      orders.setSearch(searchTerm); // Передаем новое значение поиска в хук
-    },
-    800,
-    [searchTerm]
+  const deletedEntity = useEntity(orderService);
+
+  const [_, cancelDebounce] = useDebounce(() => orders.setSearch(searchTerm), 800, [searchTerm]);
+
+  const filtersConfig = useMemo(() => {
+    return [
+      {
+        type: "select",
+        name: "status",
+        label: "Статус",
+        options: [{ value: "", label: "Все" }, ...STATUS_OPTIONS],
+        sx: { minWidth: 180 },
+      },
+      {
+        type: "text",
+        name: "customerEmail",
+        label: "Email покупателя",
+        value: orders.filters?.customerEmail,
+      },
+      {
+        type: "dateRange",
+        name: "dateRange",
+        label: "Период",
+        value: orders.filters?.dateRange,
+      },
+    ];
+  }, [orders]);
+
+  const columns = useMemo(
+    () => [
+      {
+        field: "id",
+        header: "ID",
+        width: 80,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "status",
+        header: "Статус",
+        width: 100,
+        render: (value) => (
+          <Chip
+            size="small"
+            label={STATUS_OPTIONS_OBJ[value] || value}
+            color={STATUS_COLORS[value] || "default"}
+            sx={{ width: "100%" }}
+          />
+        ),
+      },
+      {
+        field: "customer",
+        header: "Покупатель",
+        minWidth: 200,
+        render: (_, row) => (
+          <Box>
+            <Typography variant="body2">{row.customer?.email}</Typography>
+            <Typography variant="caption" color="textSecondary">
+              {row.customer?.phone || "Телефон не указан"}
+            </Typography>
+          </Box>
+        ),
+      },
+
+      {
+        field: "products",
+        header: "Товары",
+        width: 120,
+        headerAlign: "center",
+        render: (_, row) => (
+          <Box textAlign="center">
+            <Typography variant="body2">{row.products.length}</Typography>
+            <Typography variant="caption" color="textSecondary">
+              {row.productsCount} шт.
+            </Typography>
+          </Box>
+        ),
+      },
+      {
+        field: "total",
+        header: "Сумма",
+        width: 140,
+        headerAlign: "right",
+        align: "right",
+        render: (_, row) => formatCurrency(row.total),
+      },
+      {
+        field: "createdAt",
+        header: "Создан",
+        width: 160,
+        headerAlign: "right",
+        align: "right",
+        render: (value) => new Date(value).toLocaleString("ru-RU"),
+      },
+      {
+        field: "updatedAt",
+        header: "Изменен",
+        width: 160,
+        headerAlign: "right",
+        align: "right",
+        render: (value) => new Date(value).toLocaleString("ru-RU"),
+      },
+    ],
+    []
   );
-
-  const filtersConfig = [];
-
-  const columns = [
-    { field: "id", header: "ID" },
-    { field: "status", header: "Статус" },
-    { field: "createdAt", header: "Создан" },
-    { field: "updatedAt", header: "Изменен" },
-  ];
-
-  const handleDelete = () => {
-    deleteOrder.deleteEngine(selectedForDelete?.id, () => {
-      toast.success("Заказ удалён");
-      orders.refetch();
-    });
-
-    setSelectedForDelete(null);
-  };
 
   const handleSearchChange = (event) => {
     const value = event.target.value;
     setSearchTerm(value);
+  };
+
+  const handleResetFilters = () => {
+    orders.setFilters(initialFilters);
+    setSearchTerm("");
+  };
+
+  const handleDelete = () => {
+    deletedEntity.deleteItem(selectedForDelete.id, orders.refetch);
+    setSelectedForDelete(null);
   };
 
   useEffect(() => {
@@ -59,23 +167,24 @@ const OrdersPage = () => {
 
   return (
     <CrmLayout>
-      <DataTableFilters
-        filtersConfig={filtersConfig}
-        initialFilters={initialFilters}
-        searchTerm={searchTerm}
-        onFilterChange={orders.setFilters}
-        onSearchChange={handleSearchChange}
-      />
+      <Box mb={3}>
+        <DataTableFilters
+          filtersConfig={filtersConfig}
+          initialFilters={initialFilters}
+          searchTerm={searchTerm}
+          onResetFilters={handleResetFilters}
+          onFilterChange={(filters) => orders.setFilters(filters)}
+          onSearchChange={handleSearchChange}
+          searchPlaceholder="Поиск по ID заказа..."
+        />
+      </Box>
 
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
-        <Button
-          variant="contained"
-          color="success"
-          startIcon={<AddIcon />}
-          href="/crm/orders/create"
-          disabled={orders.loading}
-        >
-          Создать заказ
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="subtitle1" color="textSecondary">
+          Найдено: {orders.pagination.total}
+        </Typography>
+        <Button variant="contained" startIcon={<AddIcon />} href="/crm/orders/create" sx={{ minWidth: 160 }}>
+          Новый заказ
         </Button>
       </Box>
 
@@ -83,18 +192,29 @@ const OrdersPage = () => {
         columns={columns}
         data={orders.data}
         pagination={orders.pagination}
-        loading={orders.loading || deleteOrder.loading}
-        getEditUrl={(id) => `/crm/orders/${id}/edit`}
-        onPageChange={orders.setPage}
+        loading={orders.loading || deletedEntity.loading}
+        onPageChange={(page) => orders.setPage(page + 1)}
         onRowsPerPageChange={orders.setLimit}
+        getEditUrl={(id) => `/crm/orders/${id}/edit`}
+        getOpenUrl={(id) => `/crm/orders/${id}`}
         onDelete={setSelectedForDelete}
+        sx={{
+          "& .MuiDataGrid-cell": {
+            py: 0.5,
+            display: "flex",
+            alignItems: "center",
+          },
+          "& .MuiDataGrid-columnHeader": {
+            bgcolor: "background.default",
+          },
+        }}
       />
 
       <ConfirmationDialog
         open={!!selectedForDelete}
         onClose={() => setSelectedForDelete(null)}
         onConfirm={handleDelete}
-        contentText={`Вы уверены, что хотите удалить заказ "[${selectedForDelete?.id}]"?`}
+        contentText={`Удалить заказ #${selectedForDelete?.id}?`}
       />
     </CrmLayout>
   );
