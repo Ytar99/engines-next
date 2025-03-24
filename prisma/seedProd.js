@@ -91,7 +91,7 @@ async function main() {
           role,
           firstname: `Имя${i + 1}`,
           lastname: `Фамилия${i + 1}`,
-          phone: `+7${Math.floor(9000000000 + Math.random() * 9999999)}`,
+          phone: `${Math.floor(9000000000 + Math.random() * 9999999)}`,
         },
       });
       logToConsole(`Пользователь ${email} создан`, "info");
@@ -152,7 +152,7 @@ async function main() {
           email,
           firstname: `Клиент${i + 1}`,
           lastname: `Фамилия${i + 1}`,
-          phone: `+7${Math.floor(9000000000 + Math.random() * 9999999)}`,
+          phone: `${Math.floor(9000000000 + Math.random() * 9999999)}`,
         },
       });
       logToConsole(`Клиент ${email} создан`, "info");

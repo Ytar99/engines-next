@@ -14,8 +14,10 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Breadcrumbs,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+import HomeIcon from "@mui/icons-material/Home";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import prisma from "@/lib/prisma";
 import { formatDate, formatPhone } from "@/lib/utils/formatter";
@@ -32,6 +34,17 @@ export default function CustomerDetailsPage({ customerData }) {
   return (
     <CrmLayout>
       <Box sx={{ mb: 4 }}>
+        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+          <Link color="inherit" href="/crm" sx={{ display: "flex", alignItems: "center" }}>
+            <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+            CRM
+          </Link>
+          <Link color="inherit" href="/crm/customers">
+            Клиенты
+          </Link>
+          <Typography color="text.primary">Клиент #{customerData.id}</Typography>
+        </Breadcrumbs>
+
         <Grid container justifyContent="space-between" alignItems="center">
           <Grid item>
             <Typography variant="h4" component="h1">

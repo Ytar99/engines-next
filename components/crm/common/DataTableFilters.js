@@ -138,7 +138,13 @@ export const DataTableFilters = ({
       {filtersConfig.map((filter) => renderFilterComponent(filter))}
       {onResetFilters && (
         <Box>
-          <Button onClick={onResetFilters} variant="outlined">
+          <Button
+            onClick={() => {
+              setFilters(initialFilters);
+              onResetFilters();
+            }}
+            variant="outlined"
+          >
             Сбросить
           </Button>
         </Box>

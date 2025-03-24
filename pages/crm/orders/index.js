@@ -178,7 +178,7 @@ const OrdersPage = () => {
     setSearchTerm(value);
   };
 
-  const handleResetFilters = () => {
+  const handleResetFilters = (e) => {
     orders.setFilters(initialFilters);
     setSearchTerm("");
   };
