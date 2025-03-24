@@ -61,11 +61,14 @@ export default function EditOrderPage({ initialOrder }) {
       id: parseInt(id),
       customerId: formState.customer.id,
       status: formState.status,
-      products: formState.products.map((p) => ({
-        productId: p.product.id,
-        count: p.quantity,
-        originalCount: p.originalQuantity,
-      })),
+      products:
+        formState.status === "CANCELLED"
+          ? []
+          : formState.products.map((p) => ({
+              productId: p.product.id,
+              count: p.quantity,
+              originalCount: p.originalQuantity,
+            })),
     };
 
     const validation = validateOrder(orderData);
@@ -194,7 +197,7 @@ export default function EditOrderPage({ initialOrder }) {
               Товары в заказе
             </Typography>
 
-            {!formState.isCancelled && (
+            {formState.status !== "CANCELLED" && (
               <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
                 <Grid item xs={8}>
                   <Autocomplete
@@ -264,7 +267,11 @@ export default function EditOrderPage({ initialOrder }) {
                         Артикул: {item.product.article}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Доступно: {item.product.count + item.originalQuantity} шт.
+                        Доступно:{" "}
+                        {formState.status === "CANCELLED"
+                          ? item.product.count + item.originalQuantity
+                          : item.product.count}{" "}
+                        шт.
                       </Typography>
                     </Box>
                   </Grid>
@@ -297,7 +304,14 @@ export default function EditOrderPage({ initialOrder }) {
           <Button variant="outlined" onClick={() => router.push(`/crm/orders/${id}`)}>
             Отмена
           </Button>
-          <Button type="submit" variant="contained" color="primary" disabled={formState.isCancelled}>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={
+              formState.status === "CANCELLED" && initialOrder.status !== "CANCELLED" ? false : formState.isCancelled
+            }
+          >
             Сохранить изменения
           </Button>
         </Box>

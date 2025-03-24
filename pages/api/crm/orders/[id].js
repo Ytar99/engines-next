@@ -183,7 +183,18 @@ export default async function handler(req, res) {
           });
 
           // 4. Обновляем остатки для нового состояния
-          if (data.status !== "CANCELLED") {
+          if (data.status === "CANCELLED") {
+            // Возвращаем все товары при отмене
+            await Promise.all(
+              oldOrder.products.map((item) =>
+                tx.product.update({
+                  where: { id: item.productId },
+                  data: { count: { increment: item.count } },
+                })
+              )
+            );
+          } else if (oldOrder.status === "CANCELLED") {
+            // Вычитаем товары при восстановлении из отмены
             await Promise.all(
               data.products.map((item) =>
                 tx.product.update({
@@ -193,7 +204,6 @@ export default async function handler(req, res) {
               )
             );
           }
-
           return updatedOrder;
         });
 
