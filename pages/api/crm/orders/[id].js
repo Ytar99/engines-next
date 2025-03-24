@@ -54,86 +54,86 @@ export default async function handler(req, res) {
     }
 
     // UPDATE Order
-    if (req.method === "PUT") {
-      const existingOrder = await prisma.order.findUnique({
-        where: { id: parseInt(id) },
-        include: { products: true },
-      });
+    // if (req.method === "PUT") {
+    //   const existingOrder = await prisma.order.findUnique({
+    //     where: { id: parseInt(id) },
+    //     include: { products: true },
+    //   });
 
-      if (!existingOrder) {
-        return res.status(404).json({ error: "Заявка не найдена" });
-      }
+    //   if (!existingOrder) {
+    //     return res.status(404).json({ error: "Заявка не найдена" });
+    //   }
 
-      const data = req.body;
-      const { customerId, status, products } = data;
+    //   const data = req.body;
+    //   const { customerId, status, products } = data;
 
-      // Валидация базовой структуры
-      const validation = validateOrder(data);
-      if (!validation.valid) {
-        return res.status(400).json({ error: validation.errors });
-      }
+    //   // Валидация базовой структуры
+    //   const validation = validateOrder(data);
+    //   if (!validation.valid) {
+    //     return res.status(400).json({ error: validation.errors });
+    //   }
 
-      // Check customer exists
-      const customer = await prisma.customer.findUnique({
-        where: { id: customerId },
-      });
-      if (!customer) return res.status(400).json({ error: "Покупатель не найден" });
+    //   // Check customer exists
+    //   const customer = await prisma.customer.findUnique({
+    //     where: { id: customerId },
+    //   });
+    //   if (!customer) return res.status(400).json({ error: "Покупатель не найден" });
 
-      // Check products availability
-      for (const item of products) {
-        const product = await prisma.product.findUnique({
-          where: { id: item.productId },
-        });
-        if (!product) return res.status(400).json({ error: `Товар ${item.productId} не найден` });
-        if (product.count < item.count) {
-          return res.status(400).json({
-            error: `Недостаточно товара ${product.name} (остаток: ${product.count})`,
-          });
-        }
-      }
+    //   // Check products availability
+    //   for (const item of products) {
+    //     const product = await prisma.product.findUnique({
+    //       where: { id: item.productId },
+    //     });
+    //     if (!product) return res.status(400).json({ error: `Товар ${item.productId} не найден` });
+    //     if (product.count < item.count) {
+    //       return res.status(400).json({
+    //         error: `Недостаточно товара ${product.name} (остаток: ${product.count})`,
+    //       });
+    //     }
+    //   }
 
-      // Transaction for order update
-      const updatedOrder = await prisma.$transaction(async (tx) => {
-        // Update order
-        const order = await tx.order.update({
-          where: { id: parseInt(id) },
-          data: {
-            customerId,
-            status,
-            products: {
-              deleteMany: {},
-              create: products.map((p) => ({
-                productId: p.productId,
-                count: p.count,
-              })),
-            },
-          },
-          include: {
-            products: {
-              include: {
-                product: true,
-              },
-            },
-          },
-        });
+    //   // Transaction for order update
+    //   const updatedOrder = await prisma.$transaction(async (tx) => {
+    //     // Update order
+    //     const order = await tx.order.update({
+    //       where: { id: parseInt(id) },
+    //       data: {
+    //         customerId,
+    //         status,
+    //         products: {
+    //           deleteMany: {},
+    //           create: products.map((p) => ({
+    //             productId: p.productId,
+    //             count: p.count,
+    //           })),
+    //         },
+    //       },
+    //       include: {
+    //         products: {
+    //           include: {
+    //             product: true,
+    //           },
+    //         },
+    //       },
+    //     });
 
-        // Update product stock
-        for (const item of products) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: {
-              count: {
-                decrement: item.count,
-              },
-            },
-          });
-        }
+    //     // Update product stock
+    //     for (const item of products) {
+    //       await tx.product.update({
+    //         where: { id: item.productId },
+    //         data: {
+    //           count: {
+    //             decrement: item.count,
+    //           },
+    //         },
+    //       });
+    //     }
 
-        return order;
-      });
+    //     return order;
+    //   });
 
-      return res.status(200).json({ data: updatedOrder });
-    }
+    //   return res.status(200).json({ data: updatedOrder });
+    // }
 
     // DELETE Order
     if (req.method === "DELETE") {
@@ -141,6 +141,67 @@ export default async function handler(req, res) {
         where: { id: parseInt(id) },
       });
       return res.status(204).end();
+    }
+
+    if (req.method === "PUT") {
+      try {
+        const data = req.body;
+
+        const transaction = await prisma.$transaction(async (tx) => {
+          // 1. Получаем текущий заказ
+          const oldOrder = await tx.order.findUnique({
+            where: { id: data.id },
+            include: { products: true },
+          });
+
+          // 2. Восстанавливаем остатки для старого состояния
+          if (oldOrder.status !== "CANCELLED") {
+            await Promise.all(
+              oldOrder.products.map((item) =>
+                tx.product.update({
+                  where: { id: item.productId },
+                  data: { count: { increment: item.count } },
+                })
+              )
+            );
+          }
+
+          // 3. Обновляем заказ
+          const updatedOrder = await tx.order.update({
+            where: { id: data.id },
+            data: {
+              status: data.status,
+              products: {
+                deleteMany: {},
+                create: data.products.map((p) => ({
+                  productId: p.productId,
+                  count: p.count,
+                })),
+              },
+            },
+            include: { products: true },
+          });
+
+          // 4. Обновляем остатки для нового состояния
+          if (data.status !== "CANCELLED") {
+            await Promise.all(
+              data.products.map((item) =>
+                tx.product.update({
+                  where: { id: item.productId },
+                  data: { count: { decrement: item.count } },
+                })
+              )
+            );
+          }
+
+          return updatedOrder;
+        });
+
+        return res.status(200).json({ data: transaction });
+      } catch (error) {
+        console.error("Order update error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+      }
     }
 
     return res.status(405).json({ error: "Метод не разрешен" });

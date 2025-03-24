@@ -23,9 +23,11 @@ import CrmLayout from "@/components/layouts/CrmLayout";
 import prisma from "@/lib/prisma";
 import { formatDate, formatCurrency, formatPhone } from "@/lib/utils/formatter";
 import { STATUS_COLORS, STATUS_OPTIONS_OBJ } from "@/lib/constants/order";
+import { useParams } from "next/navigation";
 
 export default function OrderDetailsPage({ orderData }) {
   const router = useRouter();
+  const { id } = useParams();
 
   if (!orderData) return null;
 

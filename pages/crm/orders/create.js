@@ -263,7 +263,7 @@ export default function CreateOrderPage() {
                   variant="contained"
                   startIcon={<AddIcon />}
                   onClick={addProduct}
-                  disabled={!productInput.product || !productInput.product.count}
+                  disabled={!productInput.product || !productInput.product?.count}
                   fullWidth
                 >
                   Добавить
