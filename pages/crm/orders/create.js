@@ -98,7 +98,7 @@ export default function CreateOrderPage() {
     if (isDuplicate) {
       setFormState((prev) => ({
         ...prev,
-        errors: ["Этот товар уже добавлен в заказ"],
+        errors: ["Этот товар уже добавлен в заявку"],
       }));
       return;
     }

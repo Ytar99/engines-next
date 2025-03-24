@@ -97,7 +97,7 @@ export default function EditOrderPage({ initialOrder }) {
     if (isDuplicate) {
       setFormState((prev) => ({
         ...prev,
-        errors: ["Этот товар уже добавлен в заказ"],
+        errors: ["Этот товар уже добавлен в заявку"],
       }));
       return;
     }
@@ -138,7 +138,7 @@ export default function EditOrderPage({ initialOrder }) {
     <CrmLayout>
       <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 800, mx: "auto" }}>
         <Typography variant="h4" gutterBottom>
-          Редактирование заказа #{id}
+          Редактирование заявки #{id}
         </Typography>
 
         {formState.errors.length > 0 && (
@@ -167,10 +167,10 @@ export default function EditOrderPage({ initialOrder }) {
 
               <Grid item xs={4}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Статус заказа</InputLabel>
+                  <InputLabel>Статус заявки</InputLabel>
                   <Select
                     value={formState.status}
-                    label="Статус заказа"
+                    label="Статус заявки"
                     onChange={(e) =>
                       setFormState((prev) => ({
                         ...prev,
@@ -194,7 +194,7 @@ export default function EditOrderPage({ initialOrder }) {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Товары в заказе
+              Товары в заявке
             </Typography>
 
             {formState.status !== "CANCELLED" && (
@@ -337,7 +337,7 @@ export async function getServerSideProps(context) {
     });
 
     if (!order) {
-      throw new Error("Заказ не найден");
+      throw new Error("Заявка не найдена");
     }
 
     return {

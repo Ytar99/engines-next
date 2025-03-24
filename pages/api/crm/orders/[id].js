@@ -148,7 +148,7 @@ export default async function handler(req, res) {
         const data = req.body;
 
         const transaction = await prisma.$transaction(async (tx) => {
-          // 1. Получаем текущий заказ
+          // 1. Получаем текущую заявку
           const oldOrder = await tx.order.findUnique({
             where: { id: data.id },
             include: { products: true },
@@ -166,7 +166,7 @@ export default async function handler(req, res) {
             );
           }
 
-          // 3. Обновляем заказ
+          // 3. Обновляем заявку
           const updatedOrder = await tx.order.update({
             where: { id: data.id },
             data: {
