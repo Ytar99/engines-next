@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import HomeIcon from "@mui/icons-material/Home";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import prisma from "@/lib/prisma";
 import { formatDate, formatPhone } from "@/lib/utils/formatter";
@@ -42,7 +43,7 @@ export default function CustomerDetailsPage({ customerData }) {
           <Link color="inherit" href="/crm/customers">
             Клиенты
           </Link>
-          <Typography color="text.primary">Клиент #{customerData.id}</Typography>
+          <Typography color="text.primary"> #{customerData.id}</Typography>
         </Breadcrumbs>
 
         <Grid container justifyContent="space-between" alignItems="center">
@@ -54,7 +55,10 @@ export default function CustomerDetailsPage({ customerData }) {
               ID: {customerData.id}
             </Typography>
           </Grid>
-          <Grid item>
+          <Grid item sx={{ display: "flex", gap: 2 }}>
+            <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => router.back()}>
+              Назад
+            </Button>
             <Button
               variant="contained"
               startIcon={<EditIcon />}
@@ -185,7 +189,7 @@ export async function getServerSideProps(context) {
     console.error("Error fetching customer:", error);
     return {
       redirect: {
-        destination: "/crm/customers?error=CustomerNotFound",
+        destination: "/crm/customers?error=EntityNotFound",
         permanent: false,
       },
     };

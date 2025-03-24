@@ -16,6 +16,7 @@ import {
   Breadcrumbs,
   Alert,
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
 import HomeIcon from "@mui/icons-material/Home";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CrmLayout from "@/components/layouts/CrmLayout";
@@ -39,23 +40,26 @@ export default function OrderDetailsPage({ orderData }) {
             CRM
           </Link>
           <Link color="inherit" href="/crm/orders">
-            Заказы
+            Заявки
           </Link>
-          <Typography color="text.primary">Заказ #{orderData.id}</Typography>
+          <Typography color="text.primary">Заявка #{orderData.id}</Typography>
         </Breadcrumbs>
 
         <Grid container justifyContent="space-between" alignItems="center">
           <Grid item>
             <Typography variant="h4" component="h1">
-              Заказ #{orderData.id}
+              Заявка #{orderData.id}
             </Typography>
             <Typography variant="subtitle1" color="text.secondary">
               {formatDate(orderData.createdAt)}
             </Typography>
           </Grid>
-          <Grid item>
+          <Grid item sx={{ display: "flex", gap: 2 }}>
             <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => router.back()}>
               Назад
+            </Button>
+            <Button variant="contained" startIcon={<EditIcon />} onClick={() => router.push(`/crm/orders/${id}/edit`)}>
+              Редактировать
             </Button>
           </Grid>
         </Grid>
@@ -129,11 +133,11 @@ export default function OrderDetailsPage({ orderData }) {
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Состав заказа
+                Состав заявки
               </Typography>
 
               {orderData.products.length === 0 ? (
-                <Alert severity="info">Нет товаров в заказе</Alert>
+                <Alert severity="info">Нет товаров в заявке</Alert>
               ) : (
                 <Table size="small">
                   <TableHead>
@@ -148,7 +152,7 @@ export default function OrderDetailsPage({ orderData }) {
                     {orderData.products.map((item) => (
                       <TableRow key={item.product.id}>
                         <TableCell>
-                          <Link href={`/crm/products/${item.product.id}`} underline="hover">
+                          <Link href={`/crm/products/${item.product.id}/edit`} target="_blank" underline="hover">
                             {item.product.name}
                           </Link>
                           <Typography variant="body2" color="text.secondary">
@@ -188,7 +192,7 @@ export async function getServerSideProps(context) {
     });
 
     if (!order) {
-      throw new Error("Заказ не найден");
+      throw new Error("Заявка не найдена");
     }
 
     return {
@@ -200,7 +204,7 @@ export async function getServerSideProps(context) {
     console.error("Error fetching order:", error);
     return {
       redirect: {
-        destination: "/crm/orders?error=OrderNotFound",
+        destination: "/crm/orders?error=EntityNotFound",
         permanent: false,
       },
     };
