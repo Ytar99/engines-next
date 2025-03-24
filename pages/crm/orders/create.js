@@ -171,7 +171,7 @@ export default function CreateOrderPage() {
                   helperText="Начните вводить email"
                   onBlur={(e) => {
                     // Фиксируем последнее значение при потере фокуса
-                    if (e.target.value) {
+                    if (!formState.customer?.id && e.target.value) {
                       setFormState((prev) => ({
                         ...prev,
                         customer: { email: e.target.value },
