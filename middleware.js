@@ -7,7 +7,8 @@ export async function middleware(request) {
   const session = await getToken({ req: request });
 
   const userRole = session?.user?.role || null;
-  const allowedRoles = routes.find((r) => r?.path?.includes(path))?.allowedRoles || null;
+  const allowedRoles = routes.find((r) => path?.startsWith(r?.path))?.allowedRoles || null;
+
   const isAllowed = !allowedRoles || (!!allowedRoles && allowedRoles.includes(userRole)) || false;
 
   if (!isAllowed) {
