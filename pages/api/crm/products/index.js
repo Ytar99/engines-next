@@ -37,7 +37,7 @@ export default async function handler(req, res) {
           where,
           skip: (pageNum - 1) * limitNum,
           take: limitNum,
-          include: { engine: true },
+          include: { engine: true, categories: true },
           orderBy: { createdAt: "desc" },
         }),
         prisma.product.count({ where }),

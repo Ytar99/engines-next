@@ -52,6 +52,15 @@ model Engine {
   updatedAt DateTime @updatedAt @default(now())
 }
 
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt @default(now())
+}
+
 model Product {
   id            Int            @id @default(autoincrement())
   article       String
@@ -62,6 +71,7 @@ model Product {
   engineId      Int?
   img           String?
   engine        Engine?        @relation(fields: [engineId], references: [id])
+  categories Category[]
   orderProducts OrderProduct[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @default(now()) 
