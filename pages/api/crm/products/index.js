@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     // GET ALL PRODUCTS
     if (req.method === "GET") {
-      const { page = 1, limit = 10, engineId, search, minPrice, maxPrice } = req.query;
+      const { page = 1, limit = 10, engineId, categoryId, search, minPrice, maxPrice } = req.query;
 
       const pageNum = Math.max(1, parseInt(page)) || 1;
       const limitNum = Math.min(100, Math.max(1, parseInt(limit))) || 10;
@@ -29,6 +29,7 @@ export default async function handler(req, res) {
             },
           },
           { engineId: engineId ? parseInt(engineId) : undefined },
+          { categories: categoryId ? { some: { id: { equals: parseInt(categoryId) } } } : undefined },
         ].filter(Boolean),
       };
 
@@ -60,6 +61,40 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: validation.errors });
       }
 
+      const { categories, ...productBody } = req.body;
+      const errors = [];
+
+      // Проверка и обработка категорий
+      let categoryConnections = [];
+      if (categories) {
+        if (!Array.isArray(categories)) {
+          return res.status(400).json({ error: "Поле categories должно быть массивом" });
+        }
+
+        const categoryIds = categories.map((id) => parseInt(id));
+        const invalidIds = categoryIds.filter((id) => isNaN(id));
+        if (invalidIds.length > 0) {
+          errors.push(`Некорректные ID категорий: ${invalidIds.join(", ")}`);
+        }
+
+        if (errors.length === 0 && categoryIds.length > 0) {
+          const existingCategories = await prisma.category.findMany({
+            where: { id: { in: categoryIds } },
+          });
+          const existingIds = existingCategories.map((c) => c.id);
+          const missingIds = categoryIds.filter((id) => !existingIds.includes(id));
+          if (missingIds.length > 0) {
+            errors.push(`Категории не найдены: ${missingIds.join(", ")}`);
+          } else {
+            categoryConnections = categoryIds.map((id) => ({ id }));
+          }
+        }
+      }
+
+      if (errors.length > 0) {
+        return res.status(400).json({ error: errors.join("; ") });
+      }
+
       // Check for existing article
       // const existingProduct = await prisma.product.findUnique({
       //   where: { article: req.body.article },
@@ -70,15 +105,18 @@ export default async function handler(req, res) {
       // }
 
       const productData = {
-        ...req.body,
-        price: parseFloat(req.body.price),
-        count: parseInt(req.body.count),
-        engineId: req.body.engineId ? parseInt(req.body.engineId) : null,
+        ...productBody,
+        price: parseFloat(productBody.price),
+        count: parseInt(productBody.count),
+        engineId: productBody.engineId ? parseInt(productBody.engineId) : null,
       };
 
       const newProduct = await prisma.product.create({
-        data: productData,
-        include: { engine: true },
+        data: {
+          ...productData,
+          categories: categoryConnections.length > 0 ? { connect: categoryConnections } : undefined,
+        },
+        include: { engine: true, categories: true },
       });
 
       return res.status(201).json({ data: newProduct });

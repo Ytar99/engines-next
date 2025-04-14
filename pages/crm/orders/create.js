@@ -27,7 +27,7 @@ import { toast } from "react-toastify";
 
 export default function CreateOrderPage() {
   const router = useRouter();
-  const { products, loading: productsLoading } = useAllProducts();
+  const { data: products, loading: productsLoading } = useAllProducts();
   const [searchQuery, setSearchQuery] = useState("");
   const { customers, loading: searchLoading } = useCustomerSearch(searchQuery);
 

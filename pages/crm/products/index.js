@@ -11,6 +11,7 @@ import { Add as AddIcon } from "@mui/icons-material";
 import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
 import productService from "@/lib/api/productsService";
 import { useEntity } from "@/lib/hooks/useEntity";
+import { useAllCategories } from "@/lib/hooks/useAllCategories";
 
 function getSelectedProductString(product) {
   if (!product) {
@@ -20,7 +21,7 @@ function getSelectedProductString(product) {
   return `[${product.article}] ${product.name}`;
 }
 
-const initialFilters = { engineId: "" };
+const initialFilters = { engineId: "", categoryId: "" };
 
 const ProductsPage = () => {
   const [selectedForDelete, setSelectedForDelete] = useState(null);
@@ -30,12 +31,18 @@ const ProductsPage = () => {
   const deletedEntity = useEntity(productService);
 
   const engines = useAllEngines();
+  const categories = useAllCategories();
 
   const [_, cancelDebounce] = useDebounce(() => rows.setSearch(searchTerm), 800, [searchTerm]);
 
   const enginesOptions = useMemo(
     () => engines.data.map((engine) => ({ value: engine.id, label: engine.name })),
     [engines.data]
+  );
+
+  const categoriesOptions = useMemo(
+    () => categories.data.map((category) => ({ value: category.id, label: category.name })),
+    [categories.data]
   );
 
   const filtersConfig = useMemo(
@@ -46,8 +53,14 @@ const ProductsPage = () => {
         label: "Двигатель",
         options: [{ value: "", label: "Все" }, ...enginesOptions],
       },
+      {
+        type: "select",
+        name: "categoryId",
+        label: "Категории",
+        options: [{ value: "", label: "Все" }, ...categoriesOptions],
+      },
     ],
-    [enginesOptions]
+    [enginesOptions, categoriesOptions]
   );
 
   const columns = useMemo(

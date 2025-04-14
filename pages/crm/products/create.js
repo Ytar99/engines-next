@@ -1,19 +1,50 @@
 // pages/crm/products/create.js
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/router";
-import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  TextField,
+  Typography,
+  Paper,
+  Chip,
+  TableHead,
+  Grid,
+  Autocomplete,
+  CardContent,
+  Card,
+} from "@mui/material";
+import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { validateProduct } from "@/lib/utils/validation";
 import { useAllEngines } from "@/lib/hooks/useAllEngines";
 import productService from "@/lib/api/productsService";
 import { useEntity } from "@/lib/hooks/useEntity";
 import { MAX_INT } from "@/lib/constants/numbers";
+import { useAllCategories } from "@/lib/hooks/useAllCategories";
 
 export default function CreateProductPage() {
   const router = useRouter();
   const { createItem, loading, error, setEntityState } = useEntity(productService);
 
   const engines = useAllEngines();
+  const categories = useAllCategories();
+
+  const categoriesObject = categories.data.reduce((acc, category) => {
+    acc[category.id] = category;
+    return acc;
+  }, {});
 
   const [form, setForm] = useState({
     article: "",
@@ -22,7 +53,11 @@ export default function CreateProductPage() {
     price: 0,
     count: 0,
     engineId: "",
+    categories: [],
   });
+
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categoryError, setCategoryError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,12 +76,40 @@ export default function CreateProductPage() {
       price: form.price,
       count: form.count,
       engineId: form?.engineId || null,
+      categories: form.categories.map(Number),
     };
 
     createItem(submitData, () => {
       router.push("/crm/products");
     });
   };
+
+  const handleAddCategory = useCallback(() => {
+    if (!selectedCategory) return;
+
+    if (form.categories.includes(selectedCategory.id)) {
+      setCategoryError("Эта категория уже добавлена");
+      return;
+    }
+
+    setCategoryError("");
+    setForm((prev) => ({
+      ...prev,
+      categories: [...prev.categories, selectedCategory.id],
+    }));
+    setSelectedCategory(null);
+  }, [form.categories, selectedCategory]);
+
+  const handleRemoveCategory = useCallback((categoryId) => {
+    setForm((prev) => ({
+      ...prev,
+      categories: prev.categories.filter((id) => id !== categoryId),
+    }));
+  }, []);
+
+  const handleClearAllCategories = useCallback(() => {
+    setForm((prev) => ({ ...prev, categories: [] }));
+  }, []);
 
   const handleNumberChange = (e) => {
     const { name, value } = e.target;
@@ -57,6 +120,8 @@ export default function CreateProductPage() {
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
+
+  const availableCategories = categories.data.filter((cat) => !form.categories.includes(cat.id));
 
   return (
     <CrmLayout>
@@ -73,7 +138,6 @@ export default function CreateProductPage() {
           value={form.article}
           onChange={handleChange}
         />
-
         <TextField
           required
           fullWidth
@@ -84,7 +148,6 @@ export default function CreateProductPage() {
           value={form.name}
           onChange={handleChange}
         />
-
         <TextField
           fullWidth
           multiline
@@ -96,7 +159,6 @@ export default function CreateProductPage() {
           value={form.description}
           onChange={handleChange}
         />
-
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, mt: 2 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Двигатель</InputLabel>
@@ -142,6 +204,99 @@ export default function CreateProductPage() {
             InputProps={{ inputProps: { min: 0, max: MAX_INT } }}
           />
         </Box>
+
+        <Card variant="outlined" sx={{ mt: 3 }}>
+          <CardContent>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Выбранные категории ({form.categories.length})
+              </Typography>
+
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                onClick={handleClearAllCategories}
+                disabled={form.categories.length === 0}
+                startIcon={<DeleteIcon />}
+              >
+                Удалить все
+              </Button>
+            </Box>
+
+            <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
+              <Grid item xs={9}>
+                <Autocomplete
+                  size="small"
+                  options={availableCategories}
+                  loading={categories.loading}
+                  noOptionsText="Нет доступных категорий"
+                  getOptionLabel={(option) => `${option.name} (${option.slug})`}
+                  value={selectedCategory}
+                  onChange={(_, value) => setSelectedCategory(value)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Поиск категорий"
+                      placeholder="Введите название или URL-адрес категории"
+                      error={!!categoryError}
+                      helperText={categoryError}
+                    />
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={3}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddCategory}
+                  disabled={!selectedCategory}
+                  fullWidth
+                >
+                  Добавить
+                </Button>
+              </Grid>
+            </Grid>
+
+            {form.categories.length > 0 ? (
+              <TableContainer component={Paper}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Название</TableCell>
+                      <TableCell>URL-адрес</TableCell>
+                      <TableCell align="right">Действия</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {form.categories.map((categoryId) => {
+                      const category = categoriesObject[categoryId];
+
+                      return (
+                        <TableRow key={categoryId}>
+                          <TableCell>{category?.name || "Неизвестная категория"}</TableCell>
+                          <TableCell>
+                            <Chip label={category?.slug || "-"} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell align="right">
+                            <IconButton onClick={() => handleRemoveCategory(categoryId)} color="error" size="small">
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                Нет выбранных категорий
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
 
         {error && (
           <Alert severity="error" sx={{ my: 2 }}>

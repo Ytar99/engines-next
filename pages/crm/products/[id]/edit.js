@@ -1,14 +1,40 @@
 // pages/crm/products/[id]/edit.js
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/router";
-import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Grid,
+  IconButton,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  Autocomplete,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+} from "@mui/material";
+import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import { validateProduct } from "@/lib/utils/validation";
-import { useAllEngines } from "@/lib/hooks/useAllEngines";
-import prisma from "@/lib/prisma";
-import { MAX_INT } from "@/lib/constants/numbers";
+
 import productService from "@/lib/api/productsService";
 import { useEntity } from "@/lib/hooks/useEntity";
+import { MAX_INT } from "@/lib/constants/numbers";
+import prisma from "@/lib/prisma";
+import { useAllEngines } from "@/lib/hooks/useAllEngines";
+import { useAllCategories } from "@/lib/hooks/useAllCategories";
 
 export default function EditProductPage({ initialData }) {
   const router = useRouter();
@@ -17,6 +43,12 @@ export default function EditProductPage({ initialData }) {
   const { updateItem, loading, error, setEntityState } = useEntity(productService);
 
   const engines = useAllEngines();
+  const categories = useAllCategories();
+
+  const categoriesObject = categories.data.reduce((acc, category) => {
+    acc[category.id] = category;
+    return acc;
+  }, {});
 
   const [form, setForm] = useState({
     article: initialData?.article || "",
@@ -25,7 +57,11 @@ export default function EditProductPage({ initialData }) {
     price: initialData?.price || 0,
     count: initialData?.count || 0,
     engineId: initialData?.engineId || "",
+    categories: initialData?.categories?.map((c) => c.id) || [],
   });
+
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categoryError, setCategoryError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,20 +71,47 @@ export default function EditProductPage({ initialData }) {
       return setEntityState((prev) => ({ ...prev, error: validation.errors }));
     }
 
-    // Подготовка данных для отправки
     const submitData = {
       article: form.article,
       name: form.name,
-      description: form?.description || null,
+      description: form.description || null,
       price: form.price,
       count: form.count,
-      engineId: form?.engineId || null,
+      engineId: form.engineId || null,
+      categories: form.categories.map(Number),
     };
 
     await updateItem(id, submitData, () => {
       router.push("/crm/products");
     });
   };
+
+  const handleAddCategory = useCallback(() => {
+    if (!selectedCategory) return;
+
+    if (form.categories.includes(selectedCategory.id)) {
+      setCategoryError("Эта категория уже добавлена");
+      return;
+    }
+
+    setCategoryError("");
+    setForm((prev) => ({
+      ...prev,
+      categories: [...prev.categories, selectedCategory.id],
+    }));
+    setSelectedCategory(null);
+  }, [form.categories, selectedCategory]);
+
+  const handleRemoveCategory = useCallback((categoryId) => {
+    setForm((prev) => ({
+      ...prev,
+      categories: prev.categories.filter((id) => id !== categoryId),
+    }));
+  }, []);
+
+  const handleClearAllCategories = useCallback(() => {
+    setForm((prev) => ({ ...prev, categories: [] }));
+  }, []);
 
   const handleNumberChange = (e) => {
     const { name, value } = e.target;
@@ -59,6 +122,8 @@ export default function EditProductPage({ initialData }) {
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
+
+  const availableCategories = categories.data.filter((cat) => !form.categories.includes(cat.id));
 
   if (!initialData) return null;
 
@@ -77,8 +142,6 @@ export default function EditProductPage({ initialData }) {
           name="article"
           value={form.article}
           onChange={handleChange}
-          error={!!error?.includes("Артикул")}
-          helperText={error?.includes("Артикул") && "Неверный формат артикула"}
         />
 
         <TextField
@@ -105,6 +168,26 @@ export default function EditProductPage({ initialData }) {
         />
 
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, mt: 2 }}>
+          <FormControl fullWidth size="small" margin="normal">
+            <InputLabel>Двигатель</InputLabel>
+            <Select
+              name="engineId"
+              value={form.engineId}
+              onChange={handleChange}
+              label="Двигатель"
+              disabled={engines.loading}
+            >
+              <MenuItem value="">
+                <em>Не выбрано</em>
+              </MenuItem>
+              {engines.data.map((engine) => (
+                <MenuItem key={engine.id} value={engine.id}>
+                  {engine.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <TextField
             required
             fullWidth
@@ -130,27 +213,99 @@ export default function EditProductPage({ initialData }) {
             onChange={handleNumberChange}
             InputProps={{ inputProps: { min: 0, max: MAX_INT } }}
           />
-
-          <FormControl fullWidth size="small" margin="normal">
-            <InputLabel>Двигатель</InputLabel>
-            <Select
-              name="engineId"
-              value={form.engineId}
-              onChange={handleChange}
-              label="Двигатель"
-              disabled={engines.loading}
-            >
-              <MenuItem value="">
-                <em>Не выбрано</em>
-              </MenuItem>
-              {engines.data.map((engine) => (
-                <MenuItem key={engine.id} value={engine.id}>
-                  {engine.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
         </Box>
+
+        <Card variant="outlined" sx={{ mt: 3 }}>
+          <CardContent>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Выбранные категории ({form.categories.length})
+              </Typography>
+
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                onClick={handleClearAllCategories}
+                disabled={form.categories.length === 0}
+                startIcon={<DeleteIcon />}
+              >
+                Удалить все
+              </Button>
+            </Box>
+
+            <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
+              <Grid item xs={9}>
+                <Autocomplete
+                  size="small"
+                  options={availableCategories}
+                  loading={categories.loading}
+                  noOptionsText="Нет доступных категорий"
+                  getOptionLabel={(option) => `${option.name} (${option.slug})`}
+                  value={selectedCategory}
+                  onChange={(_, value) => setSelectedCategory(value)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Поиск категорий"
+                      placeholder="Введите название или URL-адрес категории"
+                      error={!!categoryError}
+                      helperText={categoryError}
+                    />
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={3}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddCategory}
+                  disabled={!selectedCategory}
+                  fullWidth
+                >
+                  Добавить
+                </Button>
+              </Grid>
+            </Grid>
+
+            {form.categories.length > 0 ? (
+              <TableContainer component={Paper}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Название</TableCell>
+                      <TableCell>URL-адрес</TableCell>
+                      <TableCell align="right">Действия</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {form.categories.map((categoryId) => {
+                      const category = categoriesObject[categoryId];
+                      return (
+                        <TableRow key={categoryId}>
+                          <TableCell>{category?.name || "Неизвестная категория"}</TableCell>
+                          <TableCell>
+                            <Chip label={category?.slug || "-"} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell align="right">
+                            <IconButton onClick={() => handleRemoveCategory(categoryId)} color="error" size="small">
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                Нет выбранных категорий
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
 
         {error && (
           <Alert severity="error" sx={{ my: 2 }}>
@@ -177,7 +332,10 @@ export async function getServerSideProps(context) {
   try {
     const data = await prisma.product.findUnique({
       where: { id: parseInt(id) },
-      include: { engine: true },
+      include: {
+        engine: true,
+        categories: true,
+      },
     });
 
     if (!data) {

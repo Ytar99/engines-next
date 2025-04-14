@@ -29,7 +29,7 @@ import { toast } from "react-toastify";
 export default function EditOrderPage({ initialOrder }) {
   const router = useRouter();
   const { id } = router.query;
-  const { products, loading: productsLoading } = useAllProducts();
+  const { data: products, loading: productsLoading } = useAllProducts();
 
   const [formState, setFormState] = useState({
     customer: initialOrder.customer,

@@ -10,6 +10,7 @@ export default async function handler(req, res) {
       orderBy: { createdAt: "desc" },
       include: {
         engine: true, // Включаем информацию о двигателе
+        categories: true,
       },
     });
 

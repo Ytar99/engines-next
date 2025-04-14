@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       const product = await prisma.product.findUnique({
         where: { id: parseInt(id) },
-        include: { engine: true },
+        include: { engine: true, categories: true },
       });
 
       return product ? res.status(200).json({ data: product }) : res.status(404).json({ error: "Товар не найден" });
@@ -30,6 +30,44 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: validation.errors });
       }
 
+      const { categories, ...updateBody } = req.body;
+      const errors = [];
+      let categoryUpdates = {};
+
+      // Обработка категорий
+      if (categories !== undefined) {
+        if (!Array.isArray(categories)) {
+          return res.status(400).json({ error: "Поле categories должно быть массивом" });
+        }
+
+        const categoryIds = categories.map((id) => parseInt(id));
+        const invalidIds = categoryIds.filter((id) => isNaN(id));
+        if (invalidIds.length > 0) {
+          errors.push(`Некорректные ID категорий: ${invalidIds.join(", ")}`);
+        }
+
+        if (errors.length === 0) {
+          if (categoryIds.length > 0) {
+            const existingCategories = await prisma.category.findMany({
+              where: { id: { in: categoryIds } },
+            });
+            const existingIds = existingCategories.map((c) => c.id);
+            const missingIds = categoryIds.filter((id) => !existingIds.includes(id));
+            if (missingIds.length > 0) {
+              errors.push(`Категории не найдены: ${missingIds.join(", ")}`);
+            } else {
+              categoryUpdates = { set: categoryIds.map((id) => ({ id })) };
+            }
+          } else {
+            categoryUpdates = { set: [] }; // Удалить все категории
+          }
+        }
+      }
+
+      if (errors.length > 0) {
+        return res.status(400).json({ error: errors.join("; ") });
+      }
+
       // Check for duplicate article
       // if (req.body.article && req.body.article !== existingProduct.article) {
       //   const duplicate = await prisma.product.findUnique({
@@ -42,16 +80,19 @@ export default async function handler(req, res) {
       // }
 
       const updateData = {
-        ...req.body,
-        price: "price" in req.body ? parseFloat(req.body.price) : undefined,
-        count: "count" in req.body ? parseInt(req.body.count) : undefined,
-        engineId: "engineId" in req.body ? (req.body.engineId ? parseInt(req.body.engineId) : null) : undefined,
+        ...updateBody,
+        price: "price" in updateBody ? parseFloat(updateBody.price) : undefined,
+        count: "count" in updateBody ? parseInt(updateBody.count) : undefined,
+        engineId: "engineId" in updateBody ? (updateBody.engineId ? parseInt(updateBody.engineId) : null) : undefined,
       };
 
       const updatedProduct = await prisma.product.update({
         where: { id: parseInt(id) },
-        data: updateData,
-        include: { engine: true },
+        data: {
+          ...updateData,
+          ...(Object.keys(categoryUpdates).length > 0 && { categories: categoryUpdates }),
+        },
+        include: { engine: true, categories: true },
       });
 
       return res.status(200).json({ data: updatedProduct });

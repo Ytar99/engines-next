@@ -28,12 +28,13 @@ import { useEntity } from "@/lib/hooks/useEntity";
 import prisma from "@/lib/prisma";
 import categoryService from "@/lib/api/categoryService";
 import { useAllProducts } from "@/lib/hooks/useAllProducts";
+import { toast } from "react-toastify";
 
 export default function EditCategoryPage({ initialData }) {
   const router = useRouter();
   const { id } = router.query;
   const { updateItem, loading, error, setEntityState } = useEntity(categoryService);
-  const { products: allProducts, loading: productsLoading } = useAllProducts();
+  const { data: allProducts, loading: productsLoading } = useAllProducts();
 
   const [form, setForm] = useState({
     name: initialData?.name || "",
@@ -80,6 +81,7 @@ export default function EditCategoryPage({ initialData }) {
       setSelectedProducts((prev) => [...prev, productInput]);
       setProductInput(null);
       setErrors([]);
+      toast.success("Продукт успешно привязан");
     } catch (error) {
       setErrors([error.message]);
     }
@@ -90,6 +92,18 @@ export default function EditCategoryPage({ initialData }) {
       await categoryService.unlinkProduct(id, productId);
       setSelectedProducts((prev) => prev.filter((p) => p.id !== productId));
       setErrors([]);
+      toast.success("Продукт успешно отвязан");
+    } catch (error) {
+      setErrors([error.message]);
+    }
+  };
+
+  const handleRemoveAllProducts = async () => {
+    try {
+      await categoryService.unlinkAllProducts(id);
+      setSelectedProducts([]);
+      setErrors([]);
+      toast.success("Продукты успешно отвязаны");
     } catch (error) {
       setErrors([error.message]);
     }
@@ -142,6 +156,15 @@ export default function EditCategoryPage({ initialData }) {
                 />
               </Grid>
             </Grid>
+
+            <Box sx={{ mt: 3, display: "flex", gap: 2, justifyContent: "flex-end" }}>
+              <Button variant="outlined" onClick={() => router.push("/crm/categories")} disabled={loading}>
+                Отмена
+              </Button>
+              <Button type="submit" variant="contained" color="primary" disabled={loading}>
+                {loading ? "Сохранение..." : "Сохранить изменения"}
+              </Button>
+            </Box>
           </CardContent>
         </Card>
 
@@ -213,17 +236,16 @@ export default function EditCategoryPage({ initialData }) {
                 Нет привязанных продуктов
               </Alert>
             )}
+
+            {selectedProducts.length > 0 && (
+              <Box sx={{ mt: 3, display: "flex", gap: 2, justifyContent: "flex-end" }}>
+                <Button variant="contained" color="error" startIcon={<DeleteIcon />} onClick={handleRemoveAllProducts}>
+                  Отвязать все продукты
+                </Button>
+              </Box>
+            )}
           </CardContent>
         </Card>
-
-        <Box sx={{ mt: 3, display: "flex", gap: 2, justifyContent: "flex-end" }}>
-          <Button variant="outlined" onClick={() => router.push("/crm/categories")} disabled={loading}>
-            Отмена
-          </Button>
-          <Button type="submit" variant="contained" color="primary" disabled={loading}>
-            {loading ? "Сохранение..." : "Сохранить изменения"}
-          </Button>
-        </Box>
       </Box>
     </CrmLayout>
   );
