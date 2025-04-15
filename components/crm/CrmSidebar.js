@@ -61,19 +61,26 @@ export default function CrmSidebar({ handleDrawerClose }) {
           }
 
           return (
-            <Link href={item.path} passHref key={`sidebar-item-${item.text}-${idx}`} legacyBehavior>
-              <ListItem
-                component="a"
-                selected={router.pathname === item.path}
-                onClick={handleDrawerClose} // Закрываем меню на мобильных
-                sx={{ p: 0, color: "text.primary" }}
-              >
-                <ListItemButton selected={router.pathname === item.path}>
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
-            </Link>
+            <ListItem
+              component={Link}
+              href={item.path}
+              key={`sidebar-item-${item.text}-${idx}`}
+              selected={router.pathname === item.path}
+              onClick={handleDrawerClose}
+              sx={{
+                p: 0,
+                color: "text.primary",
+                textDecoration: "none",
+                "&.Mui-selected": {
+                  backgroundColor: "action.selected",
+                },
+              }}
+            >
+              <ListItemButton>
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
           );
         })}
       </List>
