@@ -210,7 +210,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ data: transaction });
       } catch (error) {
         console.error("Order update error:", error);
-        return res.status(500).json({ error: "Internal server error" });
+        return res.status(500).json({ error: "Внутренняя ошибка сервера" });
       }
     }
 
