@@ -22,6 +22,9 @@ import { Add, Remove } from "@mui/icons-material";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
+import cartService from "@/lib/api/cartService";
+import { toast } from "react-toastify";
+import useCart from "@/lib/hooks/useCart";
 
 export default function ProductPage() {
   const theme = useTheme();
@@ -34,6 +37,10 @@ export default function ProductPage() {
     error,
     isLoading,
   } = useSWR(id ? `product-${id}` : null, () => catalogService.getProductDetails(id));
+
+  const cart = useCart();
+
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
 
   const [quantity, setQuantity] = useState(1);
   const maxQuantity = product?.count || 1;
@@ -51,11 +58,18 @@ export default function ProductPage() {
     setQuantity(newValue);
   };
 
-  const handleAddToCart = () => {
-    // Здесь логика добавления в корзину
-    console.log(`Adding ${quantity} items to cart`);
-    // Пример вызова:
-    // addToCart(product.id, quantity);
+  const handleAddToCart = async () => {
+    try {
+      setLoadingSubmit(true);
+
+      await cartService.addToCart(product.id, quantity);
+      cart.mutate();
+      toast.success("Товар добавлен в корзину");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Не удалось добавить в корзину");
+    } finally {
+      setLoadingSubmit(false);
+    }
   };
 
   return (
@@ -237,13 +251,8 @@ export default function ProductPage() {
                     <Button
                       variant="contained"
                       size="medium"
-                      disabled={!product?.count}
+                      disabled={!product?.count || loadingSubmit}
                       onClick={handleAddToCart}
-                      sx={{
-                        // py: 1.5,
-                        flex: 1,
-                        fontSize: { xs: "1rem", sm: "1.1rem" },
-                      }}
                     >
                       Добавить в корзину
                     </Button>

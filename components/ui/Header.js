@@ -1,98 +1,155 @@
-import Link from "next/link";
-import { useTheme, useColorScheme } from "@mui/material";
-import { AppBar, Toolbar, Typography, Button, IconButton, Box } from "@mui/material";
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  useMediaQuery,
+  Box,
+  Button,
+  Typography,
+  Badge,
+  useColorScheme,
+} from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import CloseIcon from "@mui/icons-material/Close";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import Brightness7Icon from "@mui/icons-material/Brightness7";
+import Link from "next/link";
+import { useState } from "react";
+import useCart from "@/lib/hooks/useCart";
+
+const menuItems = [
+  { title: "Каталог", path: "/catalog" },
+  { title: "Админ-панель", path: "/crm" },
+  // { title: "Контакты", path: "/contacts" },
+];
 
 export default function Header() {
-  const theme = useTheme();
+  const [openMenu, setOpenMenu] = useState(false);
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down("md"));
   const colorScheme = useColorScheme();
   const colorMode = colorScheme.mode || "light";
   const isDarkTheme = colorMode === colorScheme.darkColorScheme;
+  const cart = useCart(); // Хук для получения количества товаров
+
+  const toggleMenu = () => setOpenMenu(!openMenu);
 
   const handleChangeColorScheme = () => {
     colorScheme.setMode(isDarkTheme ? colorScheme.lightColorScheme : colorScheme.darkColorScheme);
   };
 
+  const ThemeToggleButton = () => (
+    <IconButton onClick={handleChangeColorScheme}>
+      {colorMode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
+    </IconButton>
+  );
+
+  const CartButton = () => (
+    <IconButton component={Link} href="/cart" size="large" sx={{ ml: 2 }}>
+      <Badge badgeContent={cart.count} color="secondary">
+        <ShoppingCartIcon />
+      </Badge>
+    </IconButton>
+  );
+
+  const renderDesktopMenu = () => (
+    <Box sx={{ display: "flex", alignItems: "center", ml: 4 }}>
+      {menuItems.map((item) => (
+        <Button
+          key={item.path}
+          component={Link}
+          href={item.path}
+          sx={{
+            "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" },
+            borderRadius: 1,
+            mx: 1,
+          }}
+        >
+          {item.title}
+        </Button>
+      ))}
+      <ThemeToggleButton />
+      <CartButton />
+    </Box>
+  );
+
+  const renderMobileMenu = () => (
+    <>
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <CartButton />
+        <ThemeToggleButton />
+        <IconButton edge="start" aria-label="menu" onClick={toggleMenu}>
+          <MenuIcon />
+        </IconButton>
+      </Box>
+
+      <Drawer
+        anchor="right"
+        open={openMenu}
+        onClose={toggleMenu}
+        PaperProps={{
+          sx: {
+            width: 240,
+            bgcolor: "background.paper",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            p: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="h6">Меню</Typography>
+          <IconButton onClick={toggleMenu}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        <List>
+          {menuItems.map((item) => (
+            <ListItem
+              key={item.path}
+              component={Link}
+              href={item.path}
+              onClick={toggleMenu}
+              sx={{
+                "&:hover": { backgroundColor: "action.hover" },
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
+              <ListItemText primary={item.title} />
+            </ListItem>
+          ))}
+        </List>
+      </Drawer>
+    </>
+  );
+
   return (
-    <AppBar
-      position="sticky"
-      color="default"
-      variant="outlined"
-      sx={{
-        backgroundColor: "background.paper",
-        border: "none",
-      }}
-    >
-      <Toolbar sx={{ gap: { xs: 2, md: 4 }, justifyContent: "space-between" }}>
+    <AppBar position="sticky" elevation={0} sx={{ bgcolor: "background.paper" }}>
+      <Toolbar sx={{ justifyContent: "space-between" }}>
         <Typography
           variant="h6"
           component={Link}
-          href="/catalog"
+          href="/"
           sx={{
-            fontWeight: "bold",
             color: "text.primary",
             textDecoration: "none",
-            "&:hover": { opacity: 0.8 },
-            mr: { xs: 2, md: 4 },
+            "&:hover": { color: "primary.main" },
           }}
         >
           АвтоДВС
         </Typography>
 
-        <Box sx={{ display: { xs: "none", md: "flex" }, gap: 2, flexGrow: 1 }}>
-          <Button
-            component={Link}
-            href="/catalog"
-            color="inherit"
-            sx={{
-              color: "text.primary",
-              fontWeight: 500,
-              "&:hover": { backgroundColor: "action.hover" },
-            }}
-          >
-            Каталог
-          </Button>
-
-          <Button
-            component={Link}
-            href="/crm"
-            color="inherit"
-            sx={{
-              color: "text.primary",
-              fontWeight: 500,
-              "&:hover": { backgroundColor: "action.hover" },
-            }}
-          >
-            Админ-панель
-          </Button>
-        </Box>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 2 } }}>
-          <IconButton
-            color="inherit"
-            onClick={handleChangeColorScheme}
-            sx={{
-              color: "text.secondary",
-              "&:hover": { backgroundColor: "action.hover" },
-            }}
-          >
-            {isDarkTheme ? <LightModeIcon /> : <DarkModeIcon />}
-          </IconButton>
-
-          <IconButton
-            component={Link}
-            href="/cart"
-            color="inherit"
-            sx={{
-              color: "text.secondary",
-              "&:hover": { backgroundColor: "action.hover" },
-            }}
-          >
-            <ShoppingCartIcon />
-          </IconButton>
-        </Box>
+        {isMobile ? renderMobileMenu() : renderDesktopMenu()}
       </Toolbar>
     </AppBar>
   );

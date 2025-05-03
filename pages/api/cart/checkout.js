@@ -1,78 +1,175 @@
-// POST /api/cart/checkout - Оформить заказ
+import { sealData, unsealData } from "iron-session";
+import prisma from "@/lib/prisma";
+import { validateCustomer, validateOrder, validateOrderWithStock } from "@/lib/utils/validation";
+
+const sessionOptions = {
+  password: process.env.SESSION_SECRET,
+  ttl: 60 * 60 * 24 * 7,
+  cookieName: "cart_session",
+  cookieOptions: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    sameSite: "lax",
+  },
+};
+
+const getCartSession = async (req, res) => {
+  const cookie = req.cookies[sessionOptions.cookieName];
+  const session = cookie ? await unsealData(cookie, sessionOptions) : { cart: [] };
+
+  return {
+    getCart: () => session.cart || [],
+    saveCart: async (newCart) => {
+      const sealedData = await sealData({ cart: newCart }, sessionOptions);
+      res.setHeader("Set-Cookie", [
+        `${sessionOptions.cookieName}=${sealedData}; ` +
+          `Path=/; Max-Age=${sessionOptions.ttl}; ` +
+          `${sessionOptions.cookieOptions.secure ? "Secure; " : ""}` +
+          `HttpOnly; SameSite=${sessionOptions.cookieOptions.sameSite}`,
+      ]);
+    },
+  };
+};
+
+// Вспомогательные функции
+async function getOrCreateCustomer(customerData, tx) {
+  // Валидация данных клиента
+  const validation = validateCustomer(customerData);
+  if (!validation.valid) {
+    throw { status: 400, message: validation.errors };
+  }
+
+  return tx.customer.upsert({
+    where: { email: customerData.email },
+    update: {
+      firstname: customerData.firstname === "" ? undefined : customerData.firstname,
+      lastname: customerData.lastname === "" ? undefined : customerData.lastname,
+      phone: customerData.phone === "" ? undefined : customerData.phone,
+    },
+    create: {
+      email: customerData.email,
+      firstname: customerData.firstname,
+      lastname: customerData.lastname,
+      phone: customerData.phone,
+    },
+  });
+}
+
+async function createOrderTransaction(orderData, tx) {
+  // Проверка остатков
+  const stockValidation = await validateOrderWithStock(orderData, tx);
+  if (!stockValidation.valid) {
+    throw { status: 400, message: stockValidation.errors };
+  }
+
+  // Создание заказа
+  const newOrder = await tx.order.create({
+    data: {
+      customerId: orderData.customerId,
+      status: "NEW",
+      products: {
+        create: orderData.products.map((p) => ({
+          productId: p.productId,
+          count: p.count,
+        })),
+      },
+    },
+    include: {
+      customer: true,
+      products: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  // Обновление остатков
+  await Promise.all(
+    orderData.products.map((item) =>
+      tx.product.update({
+        where: { id: item.productId },
+        data: { count: { decrement: item.count } },
+      })
+    )
+  );
+
+  return newOrder;
+}
+
+// Основной обработчик
 export default async function handler(req, res) {
-  const { cart, customer } = req.body;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const session = await getCartSession(req, res);
 
   try {
-    // Валидация данных
-    if (!cart?.length) return res.status(400).json({ error: "Cart is empty" });
-    if (!customer?.email) return res.status(400).json({ error: "Email required" });
+    const cart = await session.getCart();
+    const { customer: customerData } = req.body;
 
-    // Проверка остатков
-    const products = await prisma.product.findMany({
-      where: { id: { in: cart.map((i) => i.productId) } },
-      select: { id: true, count: true },
-    });
-
-    for (const item of cart) {
-      const product = products.find((p) => p.id === item.productId);
-      if (!product) return res.status(400).json({ error: `Product ${item.productId} not found` });
-      if (product.count < item.quantity) {
-        return res.status(400).json({ error: `Insufficient stock for product ${item.productId}` });
-      }
+    // Валидация корзины
+    if (!cart?.length) {
+      return res.status(400).json({ error: "Корзина пуста" });
     }
+
+    // Рассчет общей суммы
+    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     // Создание заказа в транзакции
     const order = await prisma.$transaction(async (tx) => {
-      // Найти или создать клиента
-      let customerRecord = await tx.customer.findUnique({
-        where: { email: customer.email },
-      });
+      // Создание/обновление клиента
+      const customer = await getOrCreateCustomer(customerData, tx);
 
-      if (!customerRecord) {
-        customerRecord = await tx.customer.create({
-          data: {
-            email: customer.email,
-            firstname: customer.firstname,
-            lastname: customer.lastname,
-            phone: customer.phone,
-          },
-        });
+      // Подготовка данных заказа
+      const orderData = {
+        customerId: customer.id,
+        status: "NEW",
+        total,
+        products: cart.map((item) => ({
+          productId: item.productId,
+          count: item.quantity,
+          price: item.price,
+        })),
+      };
+
+      // Валидация заказа
+      const orderValidation = validateOrder(orderData);
+      if (!orderValidation.valid) {
+        throw { status: 400, message: orderValidation.errors };
       }
 
-      // Создать заказ
-      const newOrder = await tx.order.create({
-        data: {
-          customerId: customerRecord.id,
-          status: "NEW",
-          products: {
-            create: cart.map((item) => ({
-              productId: item.productId,
-              count: item.quantity,
-            })),
-          },
-        },
-      });
-
-      // Обновить остатки
-      await Promise.all(
-        cart.map((item) =>
-          tx.product.update({
-            where: { id: item.productId },
-            data: { count: { decrement: item.quantity } },
-          })
-        )
-      );
-
-      return newOrder;
+      return createOrderTransaction(orderData, tx);
     });
 
-    // Очистить корзину
-    req.session.cart = [];
-    await req.session.save();
+    // Очистка корзины
+    await session.saveCart([]);
 
-    return res.status(201).json({ orderId: order.id });
+    // Форматирование ответа
+    const response = {
+      id: order.id,
+      status: order.status,
+      total: order.total,
+      createdAt: order.createdAt,
+      customer: {
+        id: order.customer.id,
+        email: order.customer.email,
+        name: `${order.customer.firstname} ${order.customer.lastname}`.trim(),
+      },
+      products: order.products.map((p) => ({
+        id: p.product.id,
+        name: p.product.name,
+        price: p.price,
+        quantity: p.count,
+      })),
+    };
+
+    return res.status(201).json(response);
   } catch (error) {
     console.error("Checkout error:", error);
-    return res.status(500).json({ error: "Внутренняя ошибка сервера" });
+    const status = error.status || 500;
+    const message = error.message || "Ошибка оформления заказа";
+    return res.status(status).json({ error: message });
   }
 }
