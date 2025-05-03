@@ -1,26 +1,36 @@
 import PublicLayout from "@/components/layouts/PublicLayout";
+import CategorySidebar from "@/components/ui/CategorySidebar";
 import catalogService from "@/lib/api/catalogService";
-import { Typography, Grid, Card, CardContent, CardMedia, Link as MuiLink, Skeleton, Alert } from "@mui/material";
-import Link from "next/link";
+import {
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
+  Link,
+  Skeleton,
+  Alert,
+  Breadcrumbs,
+  Box,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
 import { useRouter } from "next/router";
 import useSWR from "swr";
 
 export default function CategoryPage() {
+  const theme = useTheme();
   const router = useRouter();
   const { slug } = router.query;
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Загрузка данных категории
+  // Загрузка данных
   const { data: category, error: categoryError } = useSWR(slug ? `category-${slug}` : null, () =>
     catalogService.getCategoryBySlug(slug)
   );
 
-  // Загрузка товаров категории
   const { data: productsData, error: productsError } = useSWR(slug ? `category-products-${slug}` : null, () =>
-    catalogService.getCategoryProducts(slug, {
-      page: 1,
-      limit: 20,
-      sortBy: "price",
-    })
+    catalogService.getCategoryProducts(slug, { page: 1, limit: 20, sortBy: "price" })
   );
 
   const isLoading = !category || !productsData;
@@ -28,75 +38,196 @@ export default function CategoryPage() {
 
   return (
     <PublicLayout>
-      {categoryError ? (
-        <Alert severity="error">Категория не найдена</Alert>
-      ) : (
-        <>
-          <Typography variant="h3" component="h1" gutterBottom>
-            {category?.name || <Skeleton width="60%" />}
+      <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2, px: 1 }}>
+        <Link href="/" color="inherit" underline="hover" sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}>
+          Главная
+        </Link>
+        <Link href="/catalog" color="inherit" underline="hover" sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}>
+          Каталог
+        </Link>
+        {category ? (
+          <Typography color="text.primary" sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}>
+            {category.name}
           </Typography>
+        ) : (
+          <Skeleton width={100} />
+        )}
+      </Breadcrumbs>
 
-          <Typography variant="body1" paragraph sx={{ mb: 4 }}>
-            {category?.description || <Skeleton variant="rounded" height={24} />}
-          </Typography>
+      <Grid container spacing={{ xs: 1, sm: 3 }}>
+        {/* Сайдбар */}
+        <Grid item xs={12} md={3}>
+          <CategorySidebar />
+        </Grid>
 
-          {productsError && <Alert severity="error">Ошибка загрузки товаров</Alert>}
+        {/* Основной контент */}
+        <Grid item xs={12} md={9}>
+          {categoryError ? (
+            <Alert severity="error" sx={{ mb: 3, mx: 1 }}>
+              Категория не найдена
+            </Alert>
+          ) : (
+            <>
+              <Typography
+                variant="h3"
+                component="h1"
+                gutterBottom
+                sx={{
+                  mb: 4,
+                  px: 1,
+                  fontSize: { xs: "1.5rem", sm: "2rem" },
+                }}
+              >
+                {category?.name || <Skeleton width="60%" />}
+              </Typography>
 
-          <Grid container spacing={3}>
-            {isLoading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <Grid item xs={12} sm={6} md={4} key={i}>
-                    <Card variant="outlined">
-                      <Skeleton variant="rectangular" height={200} />
-                      <CardContent>
-                        <Skeleton width="80%" />
-                        <Skeleton width="60%" />
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))
-              : products.map((product) => (
-                  <Grid item xs={12} sm={6} md={4} key={product.id}>
-                    <Card
-                      variant="outlined"
-                      sx={{
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        "&:hover": { boxShadow: 2 },
-                      }}
-                    >
-                      {product.img && (
-                        <CardMedia
-                          component="img"
-                          height="200"
-                          image={product.img}
-                          alt={product.name}
-                          sx={{ objectFit: "contain", p: 2 }}
-                        />
-                      )}
+              {category?.description && (
+                <Typography
+                  variant="body1"
+                  paragraph
+                  sx={{
+                    mb: 4,
+                    px: 1,
+                    display: { xs: "none", sm: "block" },
+                  }}
+                >
+                  {category.description}
+                </Typography>
+              )}
 
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" component={Link} href={`/products/${product.id}`} passHref>
-                          <MuiLink color="inherit" underline="hover">
-                            {product.name}
-                          </MuiLink>
-                        </Typography>
+              {productsError && (
+                <Alert severity="error" sx={{ mb: 3, mx: 1 }}>
+                  Ошибка загрузки товаров
+                </Alert>
+              )}
 
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                          Артикул: {product.article}
-                        </Typography>
+              {!isLoading && products.length === 0 && (
+                <Box sx={{ p: 3, textAlign: "center" }}>
+                  <Typography variant="h6" color="text.secondary">
+                    В этой категории пока нет товаров
+                  </Typography>
+                </Box>
+              )}
 
-                        <Typography variant="h6" sx={{ mt: 2, fontWeight: "bold" }}>
-                          {product.price.toLocaleString("ru-RU")} ₽
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-          </Grid>
-        </>
-      )}
+              <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
+                {isLoading
+                  ? Array.from({ length: 6 }).map((_, i) => (
+                      <Grid item xs={6} sm={4} md={3} key={i}>
+                        <Card variant="outlined" sx={{ height: "100%" }}>
+                          <Skeleton variant="rectangular" height={isMobile ? 150 : 200} sx={{ borderRadius: 1 }} />
+                          <CardContent>
+                            <Skeleton width="80%" height={24} />
+                            <Skeleton width="60%" height={20} sx={{ mt: 1 }} />
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))
+                  : products.map((product) => (
+                      <Grid item xs={6} md={4} lg={3} key={product.id}>
+                        <Card
+                          component={Link}
+                          href={`/products/${product.id}`}
+                          variant="outlined"
+                          sx={{
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            transition: "0.3s",
+                            textDecoration: "none",
+                            "&:hover": {
+                              boxShadow: 2,
+                              borderColor: theme.palette.primary.main,
+                              transform: { md: "translateY(-4px)" },
+                            },
+                          }}
+                        >
+                          {product.img ? (
+                            <CardMedia
+                              component="img"
+                              height={isMobile ? 150 : 200}
+                              image={product.img}
+                              alt={product.name}
+                              sx={{
+                                objectFit: "contain",
+                                p: 2,
+                                bgcolor: "background.default",
+                                border: 1,
+                                borderColor: "divider",
+                                borderRadius: 1,
+                              }}
+                            />
+                          ) : (
+                            <Box
+                              height={isMobile ? 150 : 200}
+                              sx={{
+                                bgcolor: "background.default",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                border: 1,
+                                borderColor: "divider",
+                                borderRadius: 1,
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: "text.disabled",
+                                  opacity: 0.8,
+                                }}
+                              >
+                                Нет изображения
+                              </Typography>
+                            </Box>
+                          )}
+
+                          <CardContent
+                            sx={{
+                              flexGrow: 1,
+                              p: { xs: 1, sm: 2 },
+                              "&:last-child": { pb: { xs: 1, sm: 2 } },
+                            }}
+                          >
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                fontSize: { xs: "1rem", sm: "1.1rem" },
+                                "&:hover": {
+                                  color: theme.palette.primary.main,
+                                },
+                              }}
+                            >
+                              {product.name}
+                            </Typography>
+
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mt: 1, fontSize: { xs: "0.875rem", sm: "1rem" } }}
+                            >
+                              Артикул: {product.article}
+                            </Typography>
+
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                mt: 2,
+                                fontWeight: "bold",
+                                color: theme.palette.primary.main,
+                                fontSize: { xs: "1rem", sm: "1.1rem" },
+                              }}
+                            >
+                              {product.price.toLocaleString("ru-RU")} ₽
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+              </Grid>
+            </>
+          )}
+        </Grid>
+      </Grid>
     </PublicLayout>
   );
 }
