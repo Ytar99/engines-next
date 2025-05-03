@@ -115,7 +115,7 @@ export default function OrderStatusPage() {
               <TextField
                 fullWidth
                 label="Номер заказа"
-                value={orderId}
+                value={orderId || ""}
                 onChange={(e) => setOrderId(e.target.value)}
                 error={!!orderId && !isValidOrderId(orderId)}
                 helperText={!!orderId && !isValidOrderId(orderId) && "Должен содержать только цифры"}
@@ -127,7 +127,7 @@ export default function OrderStatusPage() {
                 fullWidth
                 label="Email"
                 type="email"
-                value={email}
+                value={email || ""}
                 onChange={(e) => setEmail(e.target.value)}
                 error={!!email && !isValidEmail(email)}
                 helperText={!!email && !isValidEmail(email) && "Некорректный формат email"}

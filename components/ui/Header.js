@@ -23,6 +23,7 @@ import { useState } from "react";
 import useCart from "@/lib/hooks/useCart";
 
 const menuItems = [
+  { title: "Статус заказа", path: "/check-order" },
   { title: "Каталог", path: "/catalog" },
   { title: "Админ-панель", path: "/crm" },
   // { title: "Контакты", path: "/contacts" },
@@ -49,7 +50,7 @@ export default function Header() {
   );
 
   const CartButton = () => (
-    <IconButton component={Link} href="/cart" size="large" sx={{ ml: 2 }}>
+    <IconButton component={Link} href="/cart" size="large" sx={{ ml: 2, p: 1 }}>
       <Badge badgeContent={cart.count} color="secondary">
         <ShoppingCartIcon />
       </Badge>
@@ -79,7 +80,7 @@ export default function Header() {
 
   const renderMobileMenu = () => (
     <>
-      <Box sx={{ display: "flex", alignItems: "center" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         <CartButton />
         <ThemeToggleButton />
         <IconButton edge="start" aria-label="menu" onClick={toggleMenu}>
