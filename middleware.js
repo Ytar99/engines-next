@@ -28,7 +28,7 @@ export async function middleware(request) {
   //   return NextResponse.redirect(new URL("/catalog", request.url));
   // }
 
-  if (path.startsWith("/crm") && !path.includes("/login")) {
+  if (path.startsWith("/crm") && !path.includes("/login") && !path.includes("/access-denied")) {
     if (!session) {
       return redirectWithError(request, "SessionExpired");
     }
