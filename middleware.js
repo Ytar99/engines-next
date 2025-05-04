@@ -17,11 +17,11 @@ export async function middleware(request) {
     }
 
     if (userRole) {
-      // return redirectWithError(request, "AccessDenied", "/crm/dashboard");
-      return redirectWithError(request, "AccessDenied", "/crm/access-denied");
+      return redirectWithError(request, "AccessDenied", "/crm/dashboard");
     }
 
-    return redirectWithError(request, "AccessDenied");
+    // return redirectWithError(request, "AccessDenied");
+    return redirectWithError(request, "AccessDenied", "/crm/access-denied");
   }
 
   // if (path === "/") {
