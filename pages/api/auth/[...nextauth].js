@@ -6,6 +6,9 @@ import prisma from "@/lib/prisma";
 
 const DAYS_30 = 30 * 24 * 60 * 60;
 
+const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://");
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
 export default NextAuth({
   providers: [
     CredentialsProvider({
@@ -71,10 +74,10 @@ export default NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: `${cookiePrefix}next-auth.session-token`,
       options: {
         httpOnly: true,
-        sameSite: "none",
+        sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
       },
