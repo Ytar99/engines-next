@@ -5,7 +5,7 @@ import { routes } from "@/lib/constants/routes";
 export async function middleware(request) {
   const path = request.nextUrl.pathname;
   const session = await getToken({ req: request });
-
+  console.log("SESSON", session);
   const userRole = session?.user?.role || null;
   const allowedRoles = routes.find((r) => path?.startsWith(r?.path))?.allowedRoles || null;
 
