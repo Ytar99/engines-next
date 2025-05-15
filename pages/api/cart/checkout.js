@@ -1,6 +1,11 @@
 import { sealData, unsealData } from "iron-session";
+import { Resend } from "resend";
 import prisma from "@/lib/prisma";
 import { validateCustomer, validateOrder, validateOrderWithStock } from "@/lib/utils/validation";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const getCheckOrderUrl = (orderId, email) =>
+  process.env.NEXTAUTH_URL + `/check-order?orderId=${orderId}&email=${email}`;
 
 const sessionOptions = {
   password: process.env.SESSION_SECRET,
@@ -145,6 +150,38 @@ export default async function handler(req, res) {
 
     // Очистка корзины
     await session.saveCart([]);
+
+    try {
+      await resend.emails.send({
+        from: "Ваш Магазин <onboarding@resend.dev>",
+        to: [order.customer.email],
+        subject: `Заказ #${order.id} подтверждён`,
+        html: `
+          <h1>Спасибо за заказ!</h1>
+          <p>Номер вашего заказа: <strong>#${order.id}</strong></p>
+          
+          <h2>Детали заказа:</h2>
+          <ul>
+            ${order.products
+              .map(
+                (p) => `
+              <li>
+                ${p.product.name} × ${p.count} 
+                - ${p.price * p.count} ₽
+              </li>
+            `
+              )
+              .join("")}
+          </ul>
+          
+          <p><strong>Итого: ${order.total} ₽</strong></p>
+          
+          <p>Статус заказа можно отслеживать на <a href="${getCheckOrderUrl(order.id, order.customer.email)}">странице проверки</a>.</p>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Ошибка отправки письма:", emailError);
+    }
 
     // Форматирование ответа
     const response = {
