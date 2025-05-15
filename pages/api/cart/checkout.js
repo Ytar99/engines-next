@@ -153,9 +153,9 @@ export default async function handler(req, res) {
 
     try {
       await resend.emails.send({
-        from: "Ваш Магазин <onboarding@resend.dev>",
+        from: "АвтоДВС <onboarding@resend.dev>",
         to: [order.customer.email],
-        subject: `Заказ #${order.id} подтверждён`,
+        subject: `Заказ #${order.id} создан`,
         html: `
           <h1>Спасибо за заказ!</h1>
           <p>Номер вашего заказа: <strong>#${order.id}</strong></p>
