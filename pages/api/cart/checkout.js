@@ -131,7 +131,6 @@ export default async function handler(req, res) {
       const orderData = {
         customerId: customer.id,
         status: "NEW",
-        total,
         products: cart.map((item) => ({
           productId: item.productId,
           count: item.quantity,
@@ -159,23 +158,23 @@ export default async function handler(req, res) {
         html: `
           <h1>Спасибо за заказ!</h1>
           <p>Номер вашего заказа: <strong>#${order.id}</strong></p>
-          
+
           <h2>Детали заказа:</h2>
           <ul>
             ${order.products
               .map(
                 (p) => `
               <li>
-                ${p.product.name} × ${p.count} 
-                - ${p.price * p.count} ₽
+                ${p.product.name} × ${p.count}
+                - ${p.product.price * p.count} ₽
               </li>
             `
               )
               .join("")}
           </ul>
-          
-          <p><strong>Итого: ${order.total} ₽</strong></p>
-          
+
+          <p><strong>Итого: ${total.toLocaleString("ru-RU")} ₽</strong></p>
+
           <p>Статус заказа можно отслеживать на <a href="${getCheckOrderUrl(order.id, order.customer.email)}">странице проверки</a>.</p>
         `,
       });
@@ -187,7 +186,6 @@ export default async function handler(req, res) {
     const response = {
       id: order.id,
       status: order.status,
-      total: order.total,
       createdAt: order.createdAt,
       customer: {
         id: order.customer.id,
@@ -197,7 +195,7 @@ export default async function handler(req, res) {
       products: order.products.map((p) => ({
         id: p.product.id,
         name: p.product.name,
-        price: p.price,
+        price: p.product.price,
         quantity: p.count,
       })),
     };

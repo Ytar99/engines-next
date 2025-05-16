@@ -199,10 +199,12 @@ export default function OrderStatusPage() {
                               sx={{
                                 width: 100,
                                 height: 100,
-                                bgcolor: "grey.100",
+                                p: 2,
+                                bgcolor: "background.default",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
+                                textAlign: "center",
                               }}
                             >
                               <Typography variant="caption">Нет изображения</Typography>
