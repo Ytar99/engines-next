@@ -4,8 +4,9 @@ import prisma from "@/lib/prisma";
 import { validateCustomer, validateOrder, validateOrderWithStock } from "@/lib/utils/validation";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const getCheckOrderUrl = (orderId, email) =>
-  process.env.NEXTAUTH_URL + `/check-order?orderId=${orderId}&email=${email}`;
+const getCheckOrderUrl = (orderId, email) => {
+  return `https://avtodvs-test.ru/check-order?orderId=${orderId}&email=${email}`;
+};
 
 const sessionOptions = {
   password: process.env.SESSION_SECRET,
