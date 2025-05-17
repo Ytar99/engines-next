@@ -152,7 +152,7 @@ export default async function handler(req, res) {
 
     try {
       await resend.emails.send({
-        from: "АвтоДВС <onboarding@resend.dev>",
+        from: "АвтоДВС <no-reply@avtodvs-test.ru>",
         to: [order.customer.email],
         subject: `Заказ #${order.id} создан`,
         html: `
