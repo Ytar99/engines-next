@@ -10,214 +10,256 @@ const USER_ROLES = Object.freeze({
 const prisma = new PrismaClient();
 
 function logToConsole(text = "", type = "info") {
-  let result = "";
-
-  switch (type) {
-    case "info":
-      result += "[\u001b[36m" + "Инфо" + "\u001b[0m]: ";
-      break;
-    case "warn":
-      result += "[\u001b[33m" + "Предупреждение" + "\u001b[0m]: ";
-      break;
-    case "error":
-      result += "[\u001b[31m" + "Ошибка" + "\u001b[0m]: ";
-      break;
-    default:
-      result += "[" + "Лог" + "]: ";
-      break;
-  }
-
-  result += text;
-  console.log(result);
+  const colors = { info: "\x1b[36m", warn: "\x1b[33m", error: "\x1b[31m" };
+  const prefix = colors[type] ? `[${colors[type]}${type.toUpperCase()}\x1b[0m]: ` : "[LOG]: ";
+  console.log(prefix + text);
 }
 
-function generateRandomProducts(N, engineNames) {
-  const products = [];
+// Реалистичные данные для генерации
+const FIRST_NAMES = ["Александр", "Иван", "Сергей", "Андрей", "Дмитрий", "Максим", "Евгений"];
+const LAST_NAMES = ["Иванов", "Петров", "Сидоров", "Смирнов", "Кузнецов", "Васильев"];
+const ENGINE_NAMES = ["4ISBe", "6ISBe", "QSK45", "Cummins X15", "MTU 2000", "4BT", "6BT", "ISF3.8", "ISF2.8", "QSB6.7"];
+const CATEGORIES = [
+  { name: "Все товары", slug: "all" },
+  { name: "Болты", slug: "bolty" },
+  { name: "Вкладыши", slug: "vkladyshi" },
+  { name: "Датчики", slug: "datchiki" },
+  { name: "Гильзы", slug: "gilzy" },
+  { name: "Прокладки", slug: "prokladki" },
+  { name: "Турбины", slug: "turbiny" },
+  { name: "Фильтры", slug: "filtry" },
+  { name: "Форсунки", slug: "forsunki" },
+  { name: "Поршни", slug: "porshni" },
+  { name: "Компрессоры", slug: "kompressory" },
+  { name: "ТНВД", slug: "tnvd" },
+  { name: "Ремни", slug: "remni" },
+  { name: "Шпильки", slug: "shpilki" },
+  { name: "Термостаты", slug: "termostaty" },
+  { name: "Клапаны", slug: "klapany" },
+  { name: "Маслоохладители", slug: "maslohladiteli" },
+  { name: "Трубки", slug: "trubki" },
+  { name: "Сальники", slug: "salniki" },
+  { name: "Шатуны", slug: "shatuny" },
+  { name: "Шестерни", slug: "shesterni" },
+  { name: "ГБЦ", slug: "gbc" },
+  { name: "Оригинальные запчасти", slug: "original" },
+];
 
-  for (let i = 0; i < N; i++) {
-    const article = `ART-${Math.floor(100000 + Math.random() * 900000)}`;
-    const name = `Товар ${i + 1}`;
-    const description = `Подробное описание товара ${i + 1}`;
-    const price = parseFloat((Math.random() * 500 + 50).toFixed(2));
-    const count = Math.floor(Math.random() * 100);
-    const engineName = engineNames[Math.floor(Math.random() * engineNames.length)];
-    const img = `https://example.com/images/product_${i + 1}.jpg`;
+const PRODUCT_TEMPLATES = [
+  // Для ISBe
+  { article: "3927063", name: "Болт ГБЦ M12х1.75х130", price: 200, categories: ["bolty", "gbc"], engine: "6ISBe" },
+  { article: "4891179", name: "Болт шатуна", price: 150, categories: ["bolty"], engine: "4ISBe" },
+  {
+    article: "4929827",
+    name: "Венец маховика 149 зубьев 6ISBe",
+    price: 3000,
+    categories: ["shesterni"],
+    engine: "6ISBe",
+  },
+  {
+    article: "4955745",
+    name: "Вкладыши коренные (комплект)",
+    price: 3600,
+    categories: ["vkladyshi"],
+    engine: "Cummins X15",
+  },
+  { article: "4955521", name: "Вкладыши коренные (комплект)", price: 4000, categories: ["vkladyshi"], engine: "6ISBe" },
 
-    products.push({
-      article,
-      name,
-      description,
-      price,
-      count,
-      engineName,
-      img,
-    });
-  }
+  // Для BT
+  {
+    article: "3920779",
+    name: "Болт M12x1.75x70 ГБЦ 4BT, 6BT",
+    price: 200,
+    categories: ["bolty", "gbc"],
+    engine: "4BT",
+  },
+  {
+    article: "3802010",
+    name: "Вкладыш коленвала коренной (комплект)",
+    price: 3400,
+    categories: ["vkladyshi"],
+    engine: "6BT",
+  },
+  { article: "4938600", name: "Генератор", price: 12500, categories: ["electrika"], engine: "4BT" },
 
-  return products;
-}
+  // Для 3.8
+  {
+    article: "4940194",
+    name: "Болт M12x1.75x150 ГБЦ ISF3.8",
+    price: 200,
+    categories: ["bolty", "gbc"],
+    engine: "ISF3.8",
+  },
+  {
+    article: "5263830",
+    name: "Генератор ISF3.8 (24V, 110A)",
+    price: 19000,
+    categories: ["electrika"],
+    engine: "ISF3.8",
+  },
+
+  // Для 2.8
+  {
+    article: "5257728",
+    name: "Болт M14x1.50x140 ГБЦ ISF2.8",
+    price: 220,
+    categories: ["bolty", "gbc"],
+    engine: "ISF2.8",
+  },
+  { article: "5318121", name: "Генератор ISF2.8 12V 120A", price: 12000, categories: ["electrika"], engine: "ISF2.8" },
+
+  // Оригинальные запчасти
+  {
+    article: "4076930-ORIG",
+    name: "Датчик масла (ОРИГИНАЛ)",
+    price: 1250,
+    categories: ["datchiki", "original"],
+    engine: "6ISBe",
+  },
+  {
+    article: "4921684-ORIG",
+    name: "Датчик положения распредвала (ОРИГИНАЛ)",
+    price: 2500,
+    categories: ["datchiki", "original"],
+    engine: "4ISBe",
+  },
+];
+
+PRODUCT_TEMPLATES.forEach((template) => {
+  template.categories.unshift("all");
+});
 
 async function main() {
-  // Создание администратора
-  const hashedPassword = await bcrypt.hash(process.env.DB_ADMIN_PASSWORD, 10);
-  const adminExists = await prisma.user.findUnique({
-    where: { email: process.env.DB_ADMIN_EMAIL },
-  });
+  // Администратор
+  const adminData = {
+    email: process.env.DB_ADMIN_EMAIL,
+    password: await bcrypt.hash(process.env.DB_ADMIN_PASSWORD, 10),
+    role: USER_ROLES.ADMIN,
+    firstname: "Админ",
+    lastname: "Системный",
+    phone: "79001234567",
+  };
 
-  if (!adminExists) {
-    await prisma.user.create({
-      data: {
-        email: process.env.DB_ADMIN_EMAIL,
-        password: hashedPassword,
-        role: USER_ROLES.ADMIN,
-      },
-    });
+  if (!(await prisma.user.findUnique({ where: { email: adminData.email } }))) {
+    await prisma.user.create({ data: adminData });
     logToConsole("Администратор создан", "info");
   }
 
-  // Создание 15 пользователей
+  // Категории
+  for (const { name, slug } of CATEGORIES) {
+    if (!(await prisma.category.findUnique({ where: { slug } }))) {
+      await prisma.category.create({ data: { name, slug } });
+      logToConsole(`Категория "${name}" создана`);
+    }
+  }
+
+  // Двигатели
+  for (const name of ENGINE_NAMES) {
+    if (!(await prisma.engine.findUnique({ where: { name } }))) {
+      await prisma.engine.create({ data: { name } });
+      logToConsole(`Двигатель "${name}" создан`);
+    }
+  }
+
+  // Пользователи
   for (let i = 0; i < 15; i++) {
     const email = `user${i + 1}@example.com`;
-    const exists = await prisma.user.findUnique({ where: { email } });
+    if (await prisma.user.findUnique({ where: { email } })) continue;
 
-    if (!exists) {
-      const role = i === 0 ? USER_ROLES.ADMIN : USER_ROLES.USER;
-      const password = await bcrypt.hash(`Password${i + 1}`, 10);
-
-      await prisma.user.create({
-        data: {
-          email,
-          password,
-          role,
-          firstname: `Имя${i + 1}`,
-          lastname: `Фамилия${i + 1}`,
-          phone: `${Math.floor(9000000000 + Math.random() * 9999999)}`,
-        },
-      });
-      logToConsole(`Пользователь ${email} создан`, "info");
-    }
+    await prisma.user.create({
+      data: {
+        email,
+        role: i === 0 ? USER_ROLES.ADMIN : USER_ROLES.USER,
+        password: await bcrypt.hash(`Password${i + 1}`, 10),
+        firstname: FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)],
+        lastname: LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)],
+        phone: `79${Math.random().toString().slice(2, 10)}`,
+      },
+    });
+    logToConsole(`Пользователь ${email} создан`);
   }
 
-  // Создание 15 двигателей
-  const engineCount = 15;
-  for (let i = 0; i < engineCount; i++) {
-    const name = `Engine${i + 1}`;
-    const exists = await prisma.engine.findUnique({ where: { name } });
+  // Товары
+  for (const template of PRODUCT_TEMPLATES) {
+    if (await prisma.product.findFirst({ where: { article: template.article } })) continue;
 
-    if (!exists) {
-      await prisma.engine.create({ data: { name } });
-      logToConsole(`Двигатель ${name} создан`, "info");
-    }
-  }
-
-  // Получение списка двигателей для товаров
-  const engines = await prisma.engine.findMany();
-  const engineNames = engines.map((e) => e.name);
-
-  // Создание товаров
-  const products = generateRandomProducts(63, engineNames);
-  for (const product of products) {
-    const exists = await prisma.product.findFirst({
-      where: { article: product.article },
+    const categories = await prisma.category.findMany({
+      where: { slug: { in: template.categories } },
     });
 
-    if (!exists) {
-      const engine = await prisma.engine.findUnique({
-        where: { name: product.engineName },
-      });
-
-      await prisma.product.create({
-        data: {
-          article: product.article,
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          count: product.count,
-          engineId: engine?.id,
-          img: product.img,
-        },
-      });
-      logToConsole(`Товар ${product.name} создан`, "info");
-    }
+    await prisma.product.create({
+      data: {
+        article: template.article,
+        name: template.name,
+        price: template.price,
+        count: Math.floor(Math.random() * 100),
+        // img: `https://example.com/img/${template.article}.jpg`,
+        categories: { connect: categories.map((c) => ({ id: c.id })) },
+        engine: template.engine
+          ? {
+              connect: { name: template.engine },
+            }
+          : undefined,
+      },
+    });
+    logToConsole(`Товар "${template.name}" создан`);
   }
 
-  // Создание 15 клиентов
+  // Клиенты
   for (let i = 0; i < 15; i++) {
     const email = `client${i + 1}@example.com`;
-    const exists = await prisma.customer.findUnique({ where: { email } });
+    if (await prisma.customer.findUnique({ where: { email } })) continue;
 
-    if (!exists) {
-      await prisma.customer.create({
-        data: {
-          email,
-          firstname: `Клиент${i + 1}`,
-          lastname: `Фамилия${i + 1}`,
-          phone: `${Math.floor(9000000000 + Math.random() * 9999999)}`,
-        },
-      });
-      logToConsole(`Клиент ${email} создан`, "info");
-    }
+    await prisma.customer.create({
+      data: {
+        email,
+        firstname: `Клиент_${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]}`,
+        lastname: LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)],
+        phone: `79${Math.random().toString().slice(2, 10)}`,
+      },
+    });
+    logToConsole(`Клиент ${email} создан`);
   }
 
-  // Создание 15 заявок
-  const allCustomers = await prisma.customer.findMany();
+  // Заявки
+  const customers = await prisma.customer.findMany();
   const statuses = ["COMPLETED", "PROCESSING", "CANCELLED"];
 
   for (let i = 0; i < 15; i++) {
-    const customer = allCustomers[Math.floor(Math.random() * allCustomers.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-
-    await prisma.order.create({
+    const order = await prisma.order.create({
       data: {
-        customerId: customer.id,
-        status: status,
+        customerId: customers[Math.floor(Math.random() * customers.length)].id,
+        status: statuses[Math.floor(Math.random() * statuses.length)],
       },
     });
-    logToConsole(`Заявка ${i + 1} создана для клиента ${customer.email}`, "info");
+    logToConsole(`Заявка #${order.id} создана`);
   }
 
-  // Создание связей заявка-товар
-  const allOrders = await prisma.order.findMany();
-  const allProducts = await prisma.product.findMany();
+  // Связи заявок с товарами
+  const orders = await prisma.order.findMany();
+  const products = await prisma.product.findMany();
 
-  for (const order of allOrders) {
-    const productsCount = Math.floor(Math.random() * 5) + 1; // 1-5 товаров на заявку
+  for (const order of orders) {
     const selectedProducts = new Set();
+    const count = Math.floor(Math.random() * 5) + 1;
 
-    while (selectedProducts.size < productsCount) {
-      const product = allProducts[Math.floor(Math.random() * allProducts.length)];
-      selectedProducts.add(product);
+    while (selectedProducts.size < count) {
+      selectedProducts.add(products[Math.floor(Math.random() * products.length)]);
     }
 
     for (const product of selectedProducts) {
-      const exists = await prisma.orderProduct.findUnique({
-        where: {
-          orderId_productId: {
-            orderId: order.id,
-            productId: product.id,
-          },
+      await prisma.orderProduct.create({
+        data: {
+          orderId: order.id,
+          productId: product.id,
+          count: Math.floor(Math.random() * 5) + 1,
         },
       });
-
-      if (!exists) {
-        await prisma.orderProduct.create({
-          data: {
-            orderId: order.id,
-            productId: product.id,
-            count: Math.floor(Math.random() * 5) + 1, // 1-5 штук
-          },
-        });
-        logToConsole(`Связь заявки ${order.id} с товаром ${product.id} создана`, "info");
-      }
     }
+    logToConsole(`Добавлено ${count} товаров в заявку #${order.id}`);
   }
 }
 
 main()
-  .catch((e) => {
-    logToConsole(e.message, "error");
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch((e) => logToConsole(e.message, "error"))
+  .finally(() => prisma.$disconnect());

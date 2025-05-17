@@ -14,8 +14,11 @@ import {
   Box,
   useTheme,
   useMediaQuery,
+  Pagination,
+  Stack,
 } from "@mui/material";
 import { useRouter } from "next/router";
+import { useState } from "react";
 import useSWR from "swr";
 
 export default function CategoryPage() {
@@ -23,19 +26,39 @@ export default function CategoryPage() {
   const router = useRouter();
   const { slug } = router.query;
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   // Загрузка данных
   const { data: category, error: categoryError } = useSWR(slug ? `category-${slug}` : null, () =>
     catalogService.getCategoryBySlug(slug)
   );
 
-  const { data: productsData, error: productsError } = useSWR(slug ? `category-products-${slug}` : null, () =>
-    catalogService.getCategoryProducts(slug, { page: 1, limit: 20, sortBy: "price" })
+  const {
+    data: productsData,
+    error: productsError,
+    isValidating: isLoadingProducts,
+  } = useSWR(slug ? `category-products-${slug}-${currentPage}` : null, () =>
+    catalogService.getCategoryProducts(slug, {
+      page: currentPage,
+      limit: itemsPerPage,
+      sortBy: "price",
+    })
   );
 
-  const isLoading = !category || !productsData;
+  const isLoading = !category || isLoadingProducts;
   const products = productsData?.data || [];
+  const pagination = productsData?.pagination || {
+    page: currentPage,
+    limit: itemsPerPage,
+    total: 0,
+    totalPages: 0,
+  };
 
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   return (
     <PublicLayout>
       <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2, px: 1 }}>
@@ -224,6 +247,29 @@ export default function CategoryPage() {
                       </Grid>
                     ))}
               </Grid>
+
+              {/* Пагинация */}
+              {pagination.totalPages > 1 && (
+                <Box sx={{ mt: 4, display: "flex", justifyContent: "center" }}>
+                  <Stack spacing={2}>
+                    <Pagination
+                      count={pagination.totalPages}
+                      page={currentPage}
+                      onChange={handlePageChange}
+                      color="primary"
+                      size={isMobile ? "small" : "medium"}
+                      sx={{
+                        "& .MuiPaginationItem-root": {
+                          color: "text.primary",
+                        },
+                        "& .Mui-selected": {
+                          fontWeight: "bold",
+                        },
+                      }}
+                    />
+                  </Stack>
+                </Box>
+              )}
             </>
           )}
         </Grid>

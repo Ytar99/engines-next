@@ -2,6 +2,7 @@ import PublicLayout from "@/components/layouts/PublicLayout";
 import CategoryPlaceholder from "@/components/ui/CategoryPlaceholder";
 import CategorySidebar from "@/components/ui/CategorySidebar";
 import catalogService from "@/lib/api/catalogService";
+import { sortCategories } from "@/lib/utils/sortCategories";
 import {
   Grid,
   Card,
@@ -16,12 +17,15 @@ import {
   useMediaQuery,
   Alert,
 } from "@mui/material";
+import { useMemo } from "react";
 import useSWR from "swr";
 
 export default function CatalogPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { data: categories, error, isLoading } = useSWR("catalog-categories", () => catalogService.getCategories());
+
+  const displayedCategories = useMemo(() => sortCategories(categories, true), [categories]);
 
   return (
     <PublicLayout>
@@ -75,7 +79,7 @@ export default function CatalogPage() {
             </Alert>
           ) : (
             <Grid container spacing={{ xs: 1, sm: 3 }}>
-              {categories.map((category) => (
+              {displayedCategories.map((category) => (
                 <Grid item xs={6} sm={4} key={category.id}>
                   <Card
                     component={Link}

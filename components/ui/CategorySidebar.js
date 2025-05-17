@@ -1,4 +1,5 @@
 import catalogService from "@/lib/api/catalogService";
+import { sortCategories } from "@/lib/utils/sortCategories";
 import {
   List,
   ListItem,
@@ -12,6 +13,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useMemo } from "react";
 import useSWR from "swr";
 
 export default function CategorySidebar() {
@@ -21,6 +23,8 @@ export default function CategorySidebar() {
   const { slug: currentSlug } = router.query;
 
   const { data: categories, isLoading, error } = useSWR("catalog-categories", () => catalogService.getCategories());
+
+  const displayedCategories = useMemo(() => sortCategories(categories, true), [categories]);
 
   return (
     <Box
@@ -80,7 +84,7 @@ export default function CategorySidebar() {
                   />
                 </Box>
               ))
-            : categories?.map((category) => (
+            : displayedCategories?.map((category) => (
                 <ListItem
                   key={category.id}
                   disablePadding
