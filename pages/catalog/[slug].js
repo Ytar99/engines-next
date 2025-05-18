@@ -18,7 +18,7 @@ import {
   Stack,
 } from "@mui/material";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 export default function CategoryPage() {
@@ -27,7 +27,7 @@ export default function CategoryPage() {
   const { slug } = router.query;
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 20;
 
   // Загрузка данных
   const { data: category, error: categoryError } = useSWR(slug ? `category-${slug}` : null, () =>
@@ -59,6 +59,13 @@ export default function CategoryPage() {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  useEffect(() => {
+    if (slug) {
+      setCurrentPage(1);
+    }
+  }, [slug]);
+
   return (
     <PublicLayout>
       <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2, px: 1 }}>
