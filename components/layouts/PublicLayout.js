@@ -1,5 +1,6 @@
 import { Box, Container } from "@mui/material";
 import Header from "@/components/ui/Header";
+import Footer from "@/components/ui/Footer";
 
 export default function PublicLayout({ children }) {
   return (
@@ -30,6 +31,7 @@ export default function PublicLayout({ children }) {
           flexGrow: 1,
           py: { xs: 3, md: 4 },
           backgroundColor: "background.default",
+          minHeight: "85dvh",
         }}
       >
         <Container maxWidth="xl">
@@ -44,6 +46,8 @@ export default function PublicLayout({ children }) {
           </Box>
         </Container>
       </Box>
+
+      <Footer />
     </Box>
   );
 }
