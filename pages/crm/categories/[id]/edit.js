@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
+import { toast } from "react-toastify";
+import NextImage from "next/image";
 import {
   Box,
   Button,
@@ -28,12 +30,13 @@ import { useEntity } from "@/lib/hooks/useEntity";
 import prisma from "@/lib/prisma";
 import categoryService from "@/lib/api/categoryService";
 import { useAllProducts } from "@/lib/hooks/useAllProducts";
-import { toast } from "react-toastify";
+import { ImageUploadWithCrop } from "@/components/ui/ImageUploadWithCrop";
 
 export default function EditCategoryPage({ initialData }) {
   const router = useRouter();
   const { id } = router.query;
-  const { updateItem, loading, error, setEntityState } = useEntity(categoryService);
+  const { updateItem, loading, fetchItem, data } = useEntity(categoryService);
+
   const { data: allProducts, loading: productsLoading } = useAllProducts();
 
   const [form, setForm] = useState({
@@ -47,6 +50,8 @@ export default function EditCategoryPage({ initialData }) {
 
   // Фильтруем продукты, исключая уже привязанные
   const availableProducts = allProducts.filter((product) => !selectedProducts.some((sp) => sp.id === product.id));
+
+  const imagePath = data ? data?.img : initialData?.img;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,6 +109,29 @@ export default function EditCategoryPage({ initialData }) {
       setSelectedProducts([]);
       setErrors([]);
       toast.success("Продукты успешно отвязаны");
+    } catch (error) {
+      setErrors([error.message]);
+    }
+  };
+
+  const handleUpload = async (blob, handleReset) => {
+    try {
+      await categoryService.uploadImage(id, blob);
+      handleReset();
+      setErrors([]);
+      toast.success("Изображение успешно загружено");
+      fetchItem(id);
+    } catch (error) {
+      setErrors([error.message]);
+    }
+  };
+
+  const handleRemoveImage = async (categoryId) => {
+    try {
+      await categoryService.removeImage(categoryId);
+      setErrors([]);
+      toast.success("Изображение успешно удалено");
+      fetchItem(id);
     } catch (error) {
       setErrors([error.message]);
     }
@@ -168,6 +196,47 @@ export default function EditCategoryPage({ initialData }) {
           </CardContent>
         </Card>
 
+        <Card variant="outlined" sx={{ mb: 3 }}>
+          <CardContent>
+            {imagePath && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Текущее изображение
+                  <IconButton
+                    color="error"
+                    edge="end"
+                    title="Удалить текущее изображение"
+                    onClick={() => handleRemoveImage(id)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Typography>
+                <Box>
+                  <NextImage
+                    alt="Current category image"
+                    style={{ maxWidth: "100%", objectFit: "contain" }}
+                    src={imagePath}
+                    width={300}
+                    height={300}
+                  />
+                </Box>
+              </Box>
+            )}
+
+            <Typography variant="h6" gutterBottom>
+              Загрузить изображение
+            </Typography>
+
+            <ImageUploadWithCrop
+              onUpload={handleUpload}
+              outputType="image/webp"
+              minResolution={{ width: 300, height: 300 }}
+              maxResolution={{ width: 4096, height: 4096 }}
+              outputResolution={{ width: 300, height: 300 }}
+            />
+          </CardContent>
+        </Card>
+
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h6" gutterBottom>
@@ -202,34 +271,38 @@ export default function EditCategoryPage({ initialData }) {
               </Grid>
             </Grid>
 
-            <TableContainer component={Paper}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Артикул</TableCell>
-                    <TableCell>Название</TableCell>
-                    <TableCell>Двигатель</TableCell>
-                    <TableCell align="right">Действия</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {selectedProducts.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>{product.article}</TableCell>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>
-                        {product.engine?.name ? <Chip label={product.engine.name} size="small" /> : "Не указан"}
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton onClick={() => handleRemoveProduct(product.id)} color="error" size="small">
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <Box sx={{ overflowX: "auto" }}>
+              <Box sx={{ width: "100%", display: "table", tableLayout: "fixed" }}>
+                <TableContainer component={Paper}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Артикул</TableCell>
+                        <TableCell>Название</TableCell>
+                        <TableCell>Двигатель</TableCell>
+                        <TableCell align="right">Действия</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {selectedProducts.map((product) => (
+                        <TableRow key={product.id}>
+                          <TableCell>{product.article}</TableCell>
+                          <TableCell>{product.name}</TableCell>
+                          <TableCell>
+                            {product.engine?.name ? <Chip label={product.engine.name} size="small" /> : "Не указан"}
+                          </TableCell>
+                          <TableCell align="right">
+                            <IconButton onClick={() => handleRemoveProduct(product.id)} color="error" size="small">
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </Box>
 
             {selectedProducts.length === 0 && (
               <Alert severity="info" sx={{ mt: 2 }}>

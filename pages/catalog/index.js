@@ -23,9 +23,24 @@ import useSWR from "swr";
 export default function CatalogPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+  const isLargeScreen = useMediaQuery(theme.breakpoints.up("lg"));
+
   const { data: categories, error, isLoading } = useSWR("catalog-categories", () => catalogService.getCategories());
 
   const displayedCategories = useMemo(() => sortCategories(categories, true), [categories]);
+
+  // Определяем количество колонок в зависимости от размера экрана
+  const getGridColumns = () => {
+    if (isMobile) return 2; // 2 колонки на мобильных
+    if (isTablet) return 3; // 3 колонки на планшетах
+    if (isDesktop) return 4; // 4 колонки на десктопах
+    if (isLargeScreen) return 5; // 5 колонок на больших экранах
+    return 3; // значение по умолчанию
+  };
+
+  const gridColumns = getGridColumns();
 
   return (
     <PublicLayout>
@@ -60,132 +75,150 @@ export default function CatalogPage() {
         {/* Основной контент */}
         <Grid item xs={12} md={9}>
           {isLoading ? (
-            <Grid container spacing={{ xs: 1, sm: 3 }}>
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Grid item xs={6} sm={4} key={`skeleton-${i}`}>
-                  <Card variant="outlined" sx={{ height: "100%" }}>
-                    <Skeleton variant="rectangular" height={isMobile ? 100 : 140} sx={{ borderRadius: 1 }} />
-                    <CardContent>
-                      <Skeleton width="80%" height={24} />
-                      <Skeleton width="60%" height={20} sx={{ mt: 1 }} />
-                    </CardContent>
-                  </Card>
-                </Grid>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
+                gap: { xs: 1, sm: 3 },
+              }}
+            >
+              {Array.from({ length: gridColumns * 2 }).map((_, i) => (
+                <Card variant="outlined" key={`skeleton-${i}`} sx={{ height: "100%" }}>
+                  <Skeleton
+                    variant="rectangular"
+                    sx={{
+                      width: "100%",
+                      aspectRatio: "1/1",
+                      borderRadius: 1,
+                    }}
+                  />
+                  <CardContent>
+                    <Skeleton width="80%" height={24} />
+                    <Skeleton width="60%" height={20} sx={{ mt: 1 }} />
+                  </CardContent>
+                </Card>
               ))}
-            </Grid>
+            </Box>
           ) : error ? (
             <Alert severity="error" sx={{ mx: 2 }}>
               Ошибка загрузки категорий
             </Alert>
           ) : (
-            <Grid container spacing={{ xs: 1, sm: 3 }}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "repeat(2, 1fr)",
+                  sm: "repeat(3, 1fr)",
+                  md: "repeat(4, 1fr)",
+                  lg: "repeat(5, 1fr)",
+                },
+                gap: { xs: 1, sm: 3 },
+              }}
+            >
               {displayedCategories.map((category) => (
-                <Grid item xs={6} sm={4} key={category.id}>
-                  <Card
-                    component={Link}
-                    href={`/catalog/${category.slug}`}
-                    variant="outlined"
-                    sx={{
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      transition: "0.3s",
-                      textDecoration: "none",
-                      position: "relative",
-                      "&:hover": {
-                        boxShadow: 2,
-                        borderColor: theme.palette.primary.main,
-                        transform: { md: "translateY(-4px)" },
-                      },
-                    }}
-                  >
+                <Card
+                  component={Link}
+                  href={`/catalog/${category.slug}`}
+                  variant="outlined"
+                  key={category.id}
+                  sx={{
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    transition: "0.3s",
+                    textDecoration: "none",
+                    position: "relative",
+                    "&:hover": {
+                      boxShadow: 2,
+                      borderColor: theme.palette.primary.main,
+                      transform: { md: "translateY(-4px)" },
+                    },
+                  }}
+                >
+                  {/* Изображение всегда сверху */}
+                  {category.img ? (
+                    <CardMedia
+                      component="img"
+                      sx={{
+                        width: "100%",
+                        aspectRatio: "1/1",
+                        objectFit: "cover",
+                      }}
+                      image={category.img}
+                      alt={category.name}
+                    />
+                  ) : (
                     <Box
                       sx={{
+                        width: "100%",
+                        aspectRatio: "1/1",
                         display: "flex",
-                        flexGrow: 1,
-                        flexDirection: { xs: "column", sm: "row" },
+                        alignItems: "center",
+                        justifyContent: "center",
+                        p: 2,
+                        bgcolor: "background.default",
                       }}
                     >
-                      {category.image ? (
-                        <CardMedia
-                          component="img"
-                          sx={{
-                            width: { xs: "100%", sm: 100 },
-                            height: { xs: 240, sm: "auto" },
-                            objectFit: "cover",
-                          }}
-                          image={category.image}
-                          alt={category.name}
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            width: { xs: "100%", sm: 100 },
-                            height: { xs: 240, sm: "auto" },
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            p: 2,
-                            bgcolor: "background.default",
-                          }}
-                        >
-                          <CategoryPlaceholder size={isMobile ? 40 : 60} />
-                        </Box>
-                      )}
-                      <CardContent
+                      <CategoryPlaceholder size={isMobile ? 40 : 60} />
+                    </Box>
+                  )}
+
+                  {/* Контент всегда под изображением */}
+                  <CardContent
+                    sx={{
+                      flexGrow: 1,
+                      background: theme.palette.background.default,
+                      p: { xs: 1, sm: 2 },
+                      "&:last-child": { pb: { xs: 1, sm: 2 } },
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      component="div"
+                      gutterBottom
+                      sx={{
+                        fontSize: { xs: "0.875rem", sm: "1rem" },
+                        fontWeight: 500,
+                        color: "text.primary",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {category.name}
+                    </Typography>
+
+                    {category.description && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
                         sx={{
-                          flex: 1,
-                          background: theme.palette.background.default,
-                          p: { xs: 1, sm: 2 },
-                          "&:last-child": { pb: { xs: 1, sm: 2 } },
+                          mb: 1,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          fontSize: { xs: "0.75rem", sm: "0.875rem" },
                         }}
                       >
-                        <Typography
-                          variant="h6"
-                          component="div"
-                          gutterBottom
-                          sx={{
-                            fontSize: { xs: "1rem", sm: "1.1rem" },
-                            fontWeight: 500,
-                            color: "text.primary",
-                          }}
-                        >
-                          {category.name}
-                        </Typography>
+                        {category.description}
+                      </Typography>
+                    )}
 
-                        {!isMobile && category.description && (
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{
-                              mb: 1,
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
-                            }}
-                          >
-                            {category.description}
-                          </Typography>
-                        )}
-
-                        <Typography
-                          variant="caption"
-                          color="text.disabled"
-                          sx={{
-                            display: "block",
-                            mt: "auto",
-                            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                          }}
-                        >
-                          {category._count.products} товаров
-                        </Typography>
-                      </CardContent>
-                    </Box>
-                  </Card>
-                </Grid>
+                    <Typography
+                      variant="caption"
+                      color="text.disabled"
+                      sx={{
+                        display: "block",
+                        mt: "auto",
+                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                      }}
+                    >
+                      {category._count.products} товаров
+                    </Typography>
+                  </CardContent>
+                </Card>
               ))}
-            </Grid>
+            </Box>
           )}
         </Grid>
       </Grid>

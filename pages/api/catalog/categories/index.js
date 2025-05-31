@@ -11,6 +11,7 @@ export default async function handler(req, res) {
           id: true,
           name: true,
           slug: true,
+          img: true,
           // description: true,
           _count: { select: { products: true } },
         },
