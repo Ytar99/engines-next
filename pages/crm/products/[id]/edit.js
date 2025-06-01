@@ -1,6 +1,8 @@
 // pages/crm/products/[id]/edit.js
 import { useCallback, useState } from "react";
 import { useRouter } from "next/router";
+import NextImage from "next/image";
+import { toast } from "react-toastify";
 import {
   Alert,
   Box,
@@ -35,12 +37,13 @@ import { MAX_INT } from "@/lib/constants/numbers";
 import prisma from "@/lib/prisma";
 import { useAllEngines } from "@/lib/hooks/useAllEngines";
 import { useAllCategories } from "@/lib/hooks/useAllCategories";
+import { ImageUploadWithCrop } from "@/components/ui/ImageUploadWithCrop";
 
 export default function EditProductPage({ initialData }) {
   const router = useRouter();
   const { id } = router.query;
 
-  const { updateItem, loading, error, setEntityState } = useEntity(productService);
+  const { updateItem, loading, data, fetchItem } = useEntity(productService);
 
   const engines = useAllEngines();
   const categories = useAllCategories();
@@ -62,13 +65,17 @@ export default function EditProductPage({ initialData }) {
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryError, setCategoryError] = useState("");
+  const [errors, setErrors] = useState([]);
+
+  const imagePath = data ? data?.img : initialData?.img;
+  const availableCategories = categories.data.filter((cat) => !form.categories.includes(cat.id));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validation = validateProduct(form, true);
     if (!validation.valid) {
-      return setEntityState((prev) => ({ ...prev, error: validation.errors }));
+      return setErrors([validation.errors]);
     }
 
     const submitData = {
@@ -81,9 +88,13 @@ export default function EditProductPage({ initialData }) {
       categories: form.categories.map(Number),
     };
 
-    await updateItem(id, submitData, () => {
-      router.push("/crm/products");
-    });
+    try {
+      await updateItem(id, submitData, () => {
+        router.push("/crm/products");
+      });
+    } catch (error) {
+      setErrors([error.message]);
+    }
   };
 
   const handleAddCategory = useCallback(() => {
@@ -123,7 +134,28 @@ export default function EditProductPage({ initialData }) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const availableCategories = categories.data.filter((cat) => !form.categories.includes(cat.id));
+  const handleUpload = async (blob, handleReset) => {
+    try {
+      await productService.uploadImage(id, blob);
+      handleReset();
+      setErrors([]);
+      toast.success("Изображение успешно загружено");
+      fetchItem(id);
+    } catch (error) {
+      setErrors([error.message]);
+    }
+  };
+
+  const handleRemoveImage = async (productId) => {
+    try {
+      await productService.removeImage(productId);
+      setErrors([]);
+      toast.success("Изображение успешно удалено");
+      fetchItem(id);
+    } catch (error) {
+      setErrors([error.message]);
+    }
+  };
 
   if (!initialData) return null;
 
@@ -131,6 +163,14 @@ export default function EditProductPage({ initialData }) {
     <CrmLayout>
       <h1>Редактирование товара</h1>
       <h2>{`[${initialData.article}] ${initialData.name}`}</h2>
+
+      {errors.length > 0 && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {errors.map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
+        </Alert>
+      )}
 
       <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 800, mt: 3 }}>
         <TextField
@@ -214,6 +254,47 @@ export default function EditProductPage({ initialData }) {
             InputProps={{ inputProps: { min: 0, max: MAX_INT } }}
           />
         </Box>
+
+        <Card variant="outlined" sx={{ my: 3 }}>
+          <CardContent>
+            {imagePath && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Текущее изображение
+                  <IconButton
+                    color="error"
+                    edge="end"
+                    title="Удалить текущее изображение"
+                    onClick={() => handleRemoveImage(id)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Typography>
+                <Box>
+                  <NextImage
+                    alt="Current category image"
+                    style={{ maxWidth: "100%", objectFit: "contain" }}
+                    src={imagePath}
+                    width={300}
+                    height={300}
+                  />
+                </Box>
+              </Box>
+            )}
+
+            <Typography variant="h6" gutterBottom>
+              Загрузить изображение
+            </Typography>
+
+            <ImageUploadWithCrop
+              onUpload={handleUpload}
+              outputType="image/webp"
+              minResolution={{ width: 300, height: 300 }}
+              maxResolution={{ width: 4096, height: 4096 }}
+              outputResolution={{ width: 300, height: 300 }}
+            />
+          </CardContent>
+        </Card>
 
         <Card variant="outlined" sx={{ mt: 3 }}>
           <CardContent>
@@ -306,12 +387,6 @@ export default function EditProductPage({ initialData }) {
             )}
           </CardContent>
         </Card>
-
-        {error && (
-          <Alert severity="error" sx={{ my: 2 }}>
-            {error}
-          </Alert>
-        )}
 
         <Box sx={{ mt: 3, display: "flex", gap: 2, justifyContent: "flex-end" }}>
           <Button variant="outlined" onClick={() => router.push("/crm/products")} disabled={loading}>

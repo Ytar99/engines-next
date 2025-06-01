@@ -45,3 +45,7 @@ next-env.d.ts
 /prisma/*.db
 /prisma/*.db-journal
 /prisma/backup
+
+# images
+/public/images/categories
+/public/images/products

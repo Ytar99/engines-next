@@ -26,8 +26,23 @@ export default function CategoryPage() {
   const router = useRouter();
   const { slug } = router.query;
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+  const isLargeScreen = useMediaQuery(theme.breakpoints.up("lg"));
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+
+  // Определяем количество колонок
+  const getGridColumns = () => {
+    if (isMobile) return 2;
+    if (isTablet) return 3;
+    if (isDesktop) return 4;
+    if (isLargeScreen) return 5;
+    return 3;
+  };
+
+  const gridColumns = getGridColumns();
 
   // Загрузка данных
   const { data: category, error: categoryError } = useSWR(slug ? `category-${slug}` : null, () =>
@@ -139,92 +154,118 @@ export default function CategoryPage() {
                 </Box>
               )}
 
-              <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
+              {/* Используем CSS Grid для адаптивного отображения */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "repeat(2, 1fr)",
+                    sm: "repeat(3, 1fr)",
+                    md: "repeat(4, 1fr)",
+                    lg: "repeat(5, 1fr)",
+                  },
+                  gap: { xs: 1, sm: 2, md: 3 },
+                }}
+              >
                 {isLoading
-                  ? Array.from({ length: 6 }).map((_, i) => (
-                      <Grid item xs={6} sm={4} md={3} key={i}>
-                        <Card variant="outlined" sx={{ height: "100%" }}>
-                          <Skeleton variant="rectangular" height={isMobile ? 150 : 200} sx={{ borderRadius: 1 }} />
-                          <CardContent>
+                  ? Array.from({ length: gridColumns * 2 }).map((_, i) => (
+                      <Card
+                        variant="outlined"
+                        key={i}
+                        sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+                      >
+                        <Skeleton
+                          variant="rectangular"
+                          sx={{
+                            width: "100%",
+                            aspectRatio: "1/1",
+                            borderRadius: 1,
+                          }}
+                        />
+                        <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                          <Box sx={{ flexGrow: 1 }}>
                             <Skeleton width="80%" height={24} />
                             <Skeleton width="60%" height={20} sx={{ mt: 1 }} />
-                          </CardContent>
-                        </Card>
-                      </Grid>
+                          </Box>
+                          <Skeleton width="50%" height={24} sx={{ mt: 2 }} />
+                        </CardContent>
+                      </Card>
                     ))
                   : products.map((product) => (
-                      <Grid item xs={6} md={4} lg={3} key={product.id}>
-                        <Card
-                          component={Link}
-                          href={`/products/${product.id}`}
-                          variant="outlined"
-                          sx={{
-                            height: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            transition: "0.3s",
-                            textDecoration: "none",
-                            "&:hover": {
-                              boxShadow: 2,
-                              borderColor: theme.palette.primary.main,
-                              transform: { md: "translateY(-4px)" },
-                            },
-                          }}
-                        >
-                          {product.img ? (
-                            <CardMedia
-                              component="img"
-                              height={isMobile ? 150 : 200}
-                              image={product.img}
-                              alt={product.name}
-                              sx={{
-                                objectFit: "contain",
-                                p: 2,
-                                bgcolor: "background.default",
-                                border: 1,
-                                borderColor: "divider",
-                                borderRadius: 1,
-                              }}
-                            />
-                          ) : (
-                            <Box
-                              height={isMobile ? 150 : 200}
-                              sx={{
-                                bgcolor: "background.default",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                border: 1,
-                                borderColor: "divider",
-                                borderRadius: 1,
-                              }}
-                            >
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  color: "text.disabled",
-                                  opacity: 0.8,
-                                }}
-                              >
-                                Нет изображения
-                              </Typography>
-                            </Box>
-                          )}
-
-                          <CardContent
+                      <Card
+                        component={Link}
+                        href={`/products/${product.id}`}
+                        variant="outlined"
+                        key={product.id}
+                        sx={{
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
+                          transition: "0.3s",
+                          textDecoration: "none",
+                          "&:hover": {
+                            boxShadow: 2,
+                            borderColor: theme.palette.primary.main,
+                            transform: { md: "translateY(-4px)" },
+                          },
+                        }}
+                      >
+                        {product.img ? (
+                          <CardMedia
+                            component="img"
                             sx={{
-                              flexGrow: 1,
-                              p: { xs: 1, sm: 2 },
-                              "&:last-child": { pb: { xs: 1, sm: 2 } },
+                              width: "100%",
+                              aspectRatio: "1/1",
+                              objectFit: "contain",
+                              bgcolor: "background.default",
+                            }}
+                            image={product.img}
+                            alt={product.name}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: "100%",
+                              aspectRatio: "1/1",
+                              bgcolor: "background.default",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              border: 1,
+                              borderColor: "divider",
+                              borderRadius: 1,
                             }}
                           >
                             <Typography
+                              variant="body2"
+                              sx={{
+                                color: "text.disabled",
+                                opacity: 0.8,
+                              }}
+                            >
+                              Нет изображения
+                            </Typography>
+                          </Box>
+                        )}
+
+                        <CardContent
+                          sx={{
+                            flexGrow: 1,
+                            p: { xs: 1, sm: 2 },
+                            "&:last-child": { pb: { xs: 1, sm: 2 } },
+                            display: "flex",
+                            flexDirection: "column",
+                          }}
+                        >
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography
                               variant="h6"
                               sx={{
-                                fontSize: { xs: "1rem", sm: "1.1rem" },
+                                fontSize: { xs: "1rem" },
                                 "&:hover": {
                                   color: theme.palette.primary.main,
                                 },
+                                wordBreak: "break-word",
                               }}
                             >
                               {product.name}
@@ -237,23 +278,23 @@ export default function CategoryPage() {
                             >
                               Артикул: {product.article}
                             </Typography>
+                          </Box>
 
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                mt: 2,
-                                fontWeight: "bold",
-                                color: theme.palette.primary.main,
-                                fontSize: { xs: "1rem", sm: "1.1rem" },
-                              }}
-                            >
-                              {product.price.toLocaleString("ru-RU")} ₽
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              mt: 2,
+                              fontWeight: "bold",
+                              color: theme.palette.primary.main,
+                              fontSize: { xs: "1rem", sm: "1.1rem" },
+                            }}
+                          >
+                            {product.price.toLocaleString("ru-RU")} ₽
+                          </Typography>
+                        </CardContent>
+                      </Card>
                     ))}
-              </Grid>
+              </Box>
 
               {/* Пагинация */}
               {pagination.totalPages > 1 && (
