@@ -2,21 +2,18 @@
 import prisma from "@/lib/prisma";
 
 export default async function handler(req, res) {
-  const { search, page = 1, limit = 20, sortBy = "name", sortOrder = "asc", engineId, minPrice, maxPrice } = req.query;
+  const { text, page = 1, limit = 25, sortBy = "name", sortOrder = "asc", engineId, minPrice, maxPrice } = req.query;
 
   try {
     const pageNum = parseInt(page);
-    const limitNum = Math.min(100, parseInt(limit) || 20);
+    const limitNum = Math.min(100, parseInt(limit) || 25);
     const offset = (pageNum - 1) * limitNum;
 
     const where = {
       AND: [
-        search
+        text
           ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { article: { contains: search, mode: "insensitive" } },
-              ],
+              OR: [{ name: { contains: text } }, { article: { contains: text } }],
             }
           : {},
         engineId ? { engineId: parseInt(engineId) } : {},
