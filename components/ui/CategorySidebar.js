@@ -19,7 +19,6 @@ import useSWR from "swr";
 export default function CategorySidebar() {
   const router = useRouter();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { slug: currentSlug } = router.query;
 
   const { data: categories, isLoading, error } = useSWR("catalog-categories", () => catalogService.getCategories());
@@ -32,8 +31,7 @@ export default function CategorySidebar() {
         border: 1,
         borderRadius: 1,
         borderColor: "divider", // MUI bug
-        p: 2,
-
+        p: { xs: 0, md: 2 },
         mb: { xs: 3, md: 0 },
         position: { xs: "static", md: "sticky" },
         top: 16,
@@ -126,11 +124,6 @@ export default function CategorySidebar() {
                         },
                       }}
                     />
-                    {isMobile && (
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                        {category._count?.products || 0} товар(-ов)
-                      </Typography>
-                    )}
                   </ListItemButton>
                 </ListItem>
               ))}
