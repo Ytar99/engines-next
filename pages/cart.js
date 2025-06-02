@@ -114,13 +114,7 @@ export default function CartPage() {
 
   // Обработчик ручного ввода
   const handleManualInput = (productId, value) => {
-    const finalValue = handleItemQuantityChange(productId, value);
-
-    // Покажем ошибку если превысили лимит
-    const item = items.find((i) => i.productId === productId);
-    // if (item && parseInt(value) > item.availableCount) {
-    //   toast.error(`Максимальное количество: ${item.availableCount} шт.`);
-    // }
+    handleItemQuantityChange(productId, value);
   };
 
   const handleRemoveItem = async () => {
