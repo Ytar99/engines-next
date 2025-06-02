@@ -23,8 +23,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { Add, Remove, Delete } from "@mui/icons-material";
-import { useState } from "react";
-import useSWR from "swr";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
 import useCart from "@/lib/hooks/useCart";
@@ -42,29 +41,99 @@ export default function CartPage() {
     phone: "",
   });
   const [errors, setErrors] = useState({});
+  const [updatingItems, setUpdatingItems] = useState({});
+  const [inputValues, setInputValues] = useState({});
 
-  // const { data, mutate, isLoading, error } = useSWR("cart", () => cartService.getCart());
   const cart = useCart();
-
   const { items, count, total, mutate, error, isLoading } = cart;
 
-  const handleUpdateQuantity = async (productId, newQuantity) => {
+  // Инициализация значений ввода
+  useEffect(() => {
+    if (items && items.length > 0) {
+      const initialValues = {};
+      items.forEach((item) => {
+        initialValues[item.productId] = item.quantity;
+      });
+      setInputValues(initialValues);
+    }
+  }, [items]);
+
+  const handleUpdateQuantity = async (productId, newQuantity, immediate = false) => {
+    const item = items.find((i) => i.productId === productId);
+    if (!item) return;
+
+    // Проверка на доступное количество
+    if (newQuantity > item.availableCount) {
+      toast.error(`Максимальное количество товара "${item.name}" на складе: ${item.availableCount}`);
+      return;
+    }
+
+    setUpdatingItems((prev) => ({ ...prev, [productId]: true }));
+
     try {
       await cartService.updateCartItem(productId, newQuantity);
       mutate();
     } catch (error) {
-      console.error("Update error:", error);
+      toast.error(`Ошибка обновления: ${error.message || "Попробуйте позже"}`);
+      // Восстанавливаем предыдущее значение при ошибке
+      setInputValues((prev) => ({
+        ...prev,
+        [productId]: items.find((i) => i.productId === productId).quantity,
+      }));
+    } finally {
+      setUpdatingItems((prev) => ({ ...prev, [productId]: false }));
     }
   };
 
+  // Новая функция для изменения количества с ограничениями
+  const handleItemQuantityChange = (productId, newValue) => {
+    const item = items.find((i) => i.productId === productId);
+    if (!item) return;
+
+    // Преобразуем в число и ограничиваем диапазон
+    let numericValue = parseInt(newValue) || 1;
+    numericValue = Math.max(1, numericValue);
+    numericValue = Math.min(numericValue, item.availableCount);
+
+    setInputValues((prev) => ({
+      ...prev,
+      [productId]: numericValue,
+    }));
+
+    return numericValue;
+  };
+
+  // Обработчик изменения количества (кнопки + -)
+  const handleQuantityAction = (productId, delta) => {
+    const currentValue = inputValues[productId] || 1;
+    const newValue = currentValue + delta;
+
+    const finalValue = handleItemQuantityChange(productId, newValue);
+    handleUpdateQuantity(productId, finalValue, true);
+  };
+
+  // Обработчик ручного ввода
+  const handleManualInput = (productId, value) => {
+    const finalValue = handleItemQuantityChange(productId, value);
+
+    // Покажем ошибку если превысили лимит
+    const item = items.find((i) => i.productId === productId);
+    // if (item && parseInt(value) > item.availableCount) {
+    //   toast.error(`Максимальное количество: ${item.availableCount} шт.`);
+    // }
+  };
+
   const handleRemoveItem = async () => {
+    setUpdatingItems((prev) => ({ ...prev, [selectedProduct]: true }));
+
     try {
       await cartService.removeFromCart(selectedProduct);
       toast.success("Товар успешно удален из корзины");
       mutate();
     } catch (error) {
-      toast.error("Не удалось удалить товар из корзины");
+      toast.error(`Не удалось удалить товар: ${error.message || "Попробуйте позже"}`);
     } finally {
+      setUpdatingItems((prev) => ({ ...prev, [selectedProduct]: false }));
       setOpenDialog(false);
     }
   };
@@ -100,12 +169,16 @@ export default function CartPage() {
 
       router.push(`/check-order?orderId=${newOrder?.id}&email=${encodeURIComponent(newOrder?.customer?.email)}`);
     } catch (error) {
-      console.log(error);
-      setErrors({ form: `Ошибка оформления заказа${error ? " – " + error.toString() : ""}` });
+      const errorMessage = error.message || "Ошибка при оформлении заказа";
+      toast.error(errorMessage);
+      setErrors({ form: errorMessage });
     }
   };
 
-  if (error) return <Alert severity="error">Ошибка загрузки корзины – {error.toString()}</Alert>;
+  if (error) {
+    toast.error(`Ошибка загрузки корзины: ${error.message || "Попробуйте позже"}`);
+    return <Alert severity="error">Ошибка загрузки корзины</Alert>;
+  }
 
   return (
     <PublicLayout>
@@ -122,94 +195,109 @@ export default function CartPage() {
       ) : (
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
-            {items?.map((item) => (
-              <Card key={item.productId} sx={{ mb: 2, p: 2 }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={4} sm={3}>
-                    <CardMedia
-                      component="img"
-                      image={item.img || "/placeholder-product.jpg"}
-                      alt={item.name}
-                      sx={{
-                        borderRadius: 1,
-                        height: isMobile ? 100 : 150,
-                        objectFit: "contain",
-                      }}
-                    />
-                  </Grid>
+            {items?.map((item) => {
+              const isUpdating = updatingItems[item.productId];
+              return (
+                <Card key={item.productId} sx={{ mb: 2, p: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={4} sm={3}>
+                      <CardMedia
+                        component="img"
+                        image={item.img || "/placeholder-product.jpg"}
+                        alt={item.name}
+                        sx={{
+                          borderRadius: 1,
+                          height: isMobile ? 100 : 150,
+                          objectFit: "contain",
+                          opacity: isUpdating ? 0.7 : 1,
+                        }}
+                      />
+                    </Grid>
 
-                  <Grid item xs={8} sm={9}>
-                    <Typography variant="h6" gutterBottom>
-                      {item.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Артикул: {item.article}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Цена: {item.price.toLocaleString("ru-RU")} ₽/шт.
-                    </Typography>
-
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        mt: 2,
-                        gap: 2,
-                      }}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <IconButton
-                          onClick={() => handleUpdateQuantity(item.productId, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
-                          size="small"
-                        >
-                          <Remove fontSize="small" />
-                        </IconButton>
-
-                        <TextField
-                          value={item.quantity}
-                          onChange={(e) => {
-                            const value = Math.max(1, parseInt(e.target.value)) || 1;
-                            handleUpdateQuantity(item.productId, value);
-                          }}
-                          sx={{
-                            width: 60,
-                            "& .MuiInputBase-input": {
-                              textAlign: "center",
-                              py: 0.5,
-                            },
-                          }}
-                          variant="outlined"
-                          size="small"
-                        />
-
-                        <IconButton
-                          onClick={() => handleUpdateQuantity(item.productId, item.quantity + 1)}
-                          size="small"
-                        >
-                          <Add fontSize="small" />
-                        </IconButton>
-                      </Box>
-
-                      <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                        {(item.price * item.quantity).toLocaleString("ru-RU")} ₽
+                    <Grid item xs={8} sm={9}>
+                      <Typography variant="h6" gutterBottom>
+                        {item.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Артикул: {item.article}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Цена: {item.price.toLocaleString("ru-RU")} ₽/шт.
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        На складе: {item.availableCount} шт.
                       </Typography>
 
-                      <IconButton
-                        onClick={() => {
-                          setSelectedProduct(item.productId);
-                          setOpenDialog(true);
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          mt: 2,
+                          gap: 2,
                         }}
-                        color="error"
-                        size="small"
                       >
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Box>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <IconButton
+                            onClick={() => handleQuantityAction(item.productId, -1)}
+                            disabled={inputValues[item.productId] <= 1 || isUpdating}
+                            size="small"
+                          >
+                            <Remove fontSize="small" />
+                          </IconButton>
+
+                          <TextField
+                            value={isUpdating ? "..." : inputValues[item.productId] || 1}
+                            onChange={(e) => handleManualInput(item.productId, e.target.value)}
+                            onBlur={() => handleUpdateQuantity(item.productId, inputValues[item.productId])}
+                            onKeyPress={(e) =>
+                              e.key === "Enter" && handleUpdateQuantity(item.productId, inputValues[item.productId])
+                            }
+                            disabled={isUpdating}
+                            inputProps={{
+                              min: 1,
+                              max: item.availableCount,
+                            }}
+                            sx={{
+                              width: 60,
+                              "& .MuiInputBase-input": {
+                                textAlign: "center",
+                                py: 0.5,
+                              },
+                            }}
+                            variant="outlined"
+                            size="small"
+                          />
+
+                          <IconButton
+                            onClick={() => handleQuantityAction(item.productId, 1)}
+                            disabled={inputValues[item.productId] >= item.availableCount || isUpdating}
+                            size="small"
+                          >
+                            <Add fontSize="small" />
+                          </IconButton>
+                        </Box>
+
+                        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                          {(item.price * inputValues[item.productId]).toLocaleString("ru-RU")} ₽
+                        </Typography>
+
+                        <IconButton
+                          onClick={() => {
+                            setSelectedProduct(item.productId);
+                            setOpenDialog(true);
+                          }}
+                          color="error"
+                          disabled={isUpdating}
+                          size="small"
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Grid>
                   </Grid>
-                </Grid>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </Grid>
 
           <Grid item xs={12} md={4}>
@@ -243,7 +331,7 @@ export default function CartPage() {
                       required
                       label="Email"
                       name="email"
-                      value={form.email}
+                      value={form.email || ""}
                       onChange={handleChange}
                       error={!!errors.email}
                       helperText={errors.email}
@@ -256,7 +344,7 @@ export default function CartPage() {
                       fullWidth
                       label="Имя"
                       name="firstname"
-                      value={form.firstname}
+                      value={form.firstname || ""}
                       onChange={handleChange}
                       error={!!errors.firstname}
                       helperText={errors.firstname}
@@ -269,7 +357,7 @@ export default function CartPage() {
                       fullWidth
                       label="Фамилия"
                       name="lastname"
-                      value={form.lastname}
+                      value={form.lastname || ""}
                       onChange={handleChange}
                       error={!!errors.lastname}
                       helperText={errors.lastname}
@@ -282,7 +370,7 @@ export default function CartPage() {
                       fullWidth
                       label="Телефон"
                       name="phone"
-                      value={form.phone}
+                      value={form.phone || ""}
                       onChange={handleChange}
                       error={!!errors.phone}
                       helperText={errors.phone}

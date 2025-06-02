@@ -18,8 +18,17 @@ const getCartSession = async (req, res) => {
   const cookie = req.cookies[sessionOptions.cookieName];
   const session = cookie ? await unsealData(cookie, sessionOptions) : { cart: [] };
 
+  // Нормализация структуры корзины
+  const normalizedCart = (session.cart || [])
+    .map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      addedAt: item.addedAt || new Date().toISOString(),
+    }))
+    .filter((item) => item.productId !== undefined && item.quantity !== undefined);
+
   return {
-    getCart: () => session.cart || [],
+    getCart: () => normalizedCart,
     saveCart: async (newCart) => {
       const sealedData = await sealData({ cart: newCart }, sessionOptions);
       res.setHeader("Set-Cookie", [
@@ -37,14 +46,49 @@ const getCartSession = async (req, res) => {
   };
 };
 
+// Функция для получения полных данных корзины
+async function getFullCartData(cart) {
+  if (cart.length === 0) return [];
+
+  const productIds = cart.map((item) => item.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      count: true,
+      img: true,
+      article: true,
+      description: true,
+    },
+  });
+
+  return cart.reduce((result, item) => {
+    const product = products.find((p) => p.id === item.productId);
+    if (product) {
+      result.push({
+        ...item,
+        name: product.name,
+        price: product.price,
+        availableCount: product.count,
+        img: product.img,
+        article: product.article,
+        description: product.description,
+      });
+    }
+    return result;
+  }, []);
+}
+
 export default async function handler(req, res) {
   try {
     const session = await getCartSession(req, res);
-    const currentCart = await session.getCart();
+    const currentCart = session.getCart();
 
     switch (req.method) {
       case "GET":
-        return handleGetCart(currentCart, res);
+        return handleGetCart(session, currentCart, res);
 
       case "POST":
         return handleAddToCart(req, session, currentCart, res);
@@ -64,22 +108,32 @@ export default async function handler(req, res) {
   }
 }
 
-// Обработчики методов
-async function handleGetCart(cart, res) {
-  return res.status(200).json(cart);
+async function handleGetCart(session, cart, res) {
+  const fullCart = await getFullCartData(cart);
+
+  // Фильтрация отсутствующих товаров
+  const existingIds = fullCart.map((item) => item.productId);
+  const cleanedCart = cart.filter((item) => existingIds.includes(item.productId));
+
+  // Обновление сессии при наличии изменений
+  if (cleanedCart.length !== cart.length) {
+    await session.saveCart(cleanedCart);
+  }
+
+  return res.status(200).json(fullCart);
 }
 
 async function handleAddToCart(req, session, cart, res) {
   const productId = Number(req.body.productId);
   const quantity = Number(req.body.quantity || 1);
 
-  if (!productId || typeof quantity !== "number" || quantity < 1) {
+  if (!productId || isNaN(quantity) || quantity < 1) {
     return res.status(400).json({ error: "Invalid request body" });
   }
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true, name: true, price: true, count: true },
+    select: { count: true },
   });
 
   if (!product) {
@@ -99,23 +153,22 @@ async function handleAddToCart(req, session, cart, res) {
     newCart[existingItemIndex].quantity += quantity;
   } else {
     newCart.push({
-      productId: product.id,
-      name: product.name,
-      price: product.price,
+      productId,
       quantity,
       addedAt: new Date().toISOString(),
     });
   }
 
   await session.saveCart(newCart);
-  return res.status(200).json(newCart);
+  const fullCart = await getFullCartData(newCart);
+  return res.status(200).json(fullCart);
 }
 
 async function handleUpdateCart(req, session, cart, res) {
   const productId = Number(req.query.productId);
   const quantity = Number(req.body.quantity);
 
-  if (!productId || typeof quantity !== "number" || quantity < 1) {
+  if (!productId || isNaN(quantity) || quantity < 1) {
     return res.status(400).json({ error: "Invalid parameters" });
   }
 
@@ -125,7 +178,14 @@ async function handleUpdateCart(req, session, cart, res) {
   });
 
   if (!product) {
-    return res.status(404).json({ error: "Product not found" });
+    // Удаляем отсутствующий товар из корзины
+    const newCart = cart.filter((item) => item.productId !== productId);
+    await session.saveCart(newCart);
+    const fullCart = await getFullCartData(newCart);
+    return res.status(404).json({
+      error: "Product not found. Removed from cart.",
+      cart: fullCart,
+    });
   }
 
   if (product.count < quantity) {
@@ -143,7 +203,8 @@ async function handleUpdateCart(req, session, cart, res) {
   newCart[itemIndex].quantity = quantity;
 
   await session.saveCart(newCart);
-  return res.status(200).json(newCart);
+  const fullCart = await getFullCartData(newCart);
+  return res.status(200).json(fullCart);
 }
 
 async function handleRemoveFromCart(req, session, cart, res) {
@@ -155,6 +216,7 @@ async function handleRemoveFromCart(req, session, cart, res) {
 
   const newCart = cart.filter((item) => item.productId !== productId);
   await session.saveCart(newCart);
+  const fullCart = await getFullCartData(newCart);
 
-  return res.status(200).json(newCart);
+  return res.status(200).json(fullCart);
 }
