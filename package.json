@@ -28,6 +28,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "dotenv-cli": "^8.0.0",
+    "formidable": "^3.5.4",
     "iron-session": "^8.0.4",
     "next": "^15.3.0",
     "next-auth": "^4.24.11",

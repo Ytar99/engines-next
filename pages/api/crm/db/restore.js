@@ -20,12 +20,11 @@ export default async function handler(req, res) {
   }
 
   let tmpDir = "";
-  let backupDir = "";
   let cleanupRequired = false;
 
   try {
-    // Создаем временную директорию ВНУТРИ проекта
-    tmpDir = path.join(process.cwd(), "tmp_restore_" + uuidv4());
+    // Создаем временную директорию
+    tmpDir = path.join(os.tmpdir(), "restore_" + uuidv4());
     fs.mkdirSync(tmpDir, { recursive: true });
     cleanupRequired = true;
 
@@ -92,88 +91,53 @@ export default async function handler(req, res) {
     // Проверка безопасности путей
     for (const entry of zipEntries) {
       const entryPath = entry.entryName;
-      if (
-        entryPath.includes("..") ||
-        path.isAbsolute(entryPath) ||
-        (!entryPath.startsWith("images/") && entryPath !== "database.sqlite")
-      ) {
-        throw new Error(`Invalid file path in archive: ${entryPath}`);
+      if (entryPath.includes("..") || path.isAbsolute(entryPath) || entryPath !== "database.sqlite") {
+        throw new Error(`Invalid file in archive: ${entryPath}`);
       }
     }
 
     zip.extractAllTo(tmpDir, true);
 
-    // Пути к файлам
+    // Путь к файлу БД
     const dbPath = getDatabasePath();
     const dbDir = path.dirname(dbPath);
-    const imgDir = path.join(process.cwd(), "public/images");
 
-    // Проверка наличия файла БД
+    // Проверка наличия файла БД в архиве
     const dbFile = path.join(tmpDir, "database.sqlite");
     if (!fs.existsSync(dbFile)) {
       throw new Error("Database file missing in archive");
     }
 
-    // Создаем бэкап для отката В ТОЙ ЖЕ ДИРЕКТОРИИ
-    backupDir = path.join(dbDir, `backup_${uuidv4()}`);
-    fs.mkdirSync(backupDir, { recursive: true });
-    const dbBackupPath = path.join(backupDir, "database.sqlite");
+    // Создаем бэкап текущей БД
+    const backupPath = path.join(dbDir, `backup_${uuidv4()}.sqlite`);
 
     // Закрываем соединения с БД
     await closeDatabaseConnections();
 
     // Копируем текущую БД в бэкап
-    fs.copyFileSync(dbPath, dbBackupPath);
+    fs.copyFileSync(dbPath, backupPath);
 
-    // Прямое копирование новой БД (без переименования)
+    // Заменяем текущую БД на восстановленную
     fs.copyFileSync(dbFile, dbPath);
-
-    // Функция безопасного восстановления директорий
-    const safeRestoreDir = (srcDir, destDir) => {
-      if (!fs.existsSync(srcDir)) return;
-
-      // Создаем бэкап оригинальной директории
-      const backupPath = path.join(backupDir, path.basename(destDir));
-      if (fs.existsSync(destDir)) {
-        fs.cpSync(destDir, backupPath, { recursive: true });
-      }
-
-      // Прямая замена содержимого
-      fs.rmSync(destDir, { recursive: true, force: true });
-      fs.cpSync(srcDir, destDir, { recursive: true });
-    };
-
-    // Восстановление изображений
-    safeRestoreDir(path.join(tmpDir, "images/categories"), path.join(imgDir, "categories"));
-
-    safeRestoreDir(path.join(tmpDir, "images/products"), path.join(imgDir, "products"));
 
     // Очистка временных файлов
     fs.rmSync(tmpDir, { recursive: true, force: true });
     cleanupRequired = false;
 
-    // Оставляем бэкап на случай если понадобится ручной откат
-    console.log(`Backup kept at: ${backupDir}`);
-
     res.status(200).json({
       message: "Restore completed successfully",
-      backupPath: backupDir, // Для информации
+      backupPath: backupPath, // Для информации
     });
   } catch (error) {
     console.error("Restore error:", error);
 
     // Попытка восстановления из бэкапа
     try {
-      if (backupDir && fs.existsSync(backupDir)) {
-        const dbBackupPath = path.join(backupDir, "database.sqlite");
-        if (fs.existsSync(dbBackupPath)) {
-          await closeDatabaseConnections();
-
-          // Прямое копирование бэкапа поверх основной БД
-          fs.copyFileSync(dbBackupPath, getDatabasePath());
-
-          console.log("Database rollback successful");
-        }
+      const dbPath = getDatabasePath();
+      if (fs.existsSync(backupPath)) {
+        await closeDatabaseConnections();
+        fs.copyFileSync(backupPath, dbPath);
+        console.log("Database rollback successful");
       }
     } catch (rollbackError) {
       console.error("Database rollback failed:", rollbackError);

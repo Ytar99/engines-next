@@ -5,13 +5,13 @@ import { getDatabasePath } from "@/lib/utils/database";
 
 export default async function handler(req, res) {
   try {
-    // Пути к данным
+    // Путь к базе данных
     const dbPath = getDatabasePath();
-    const imgCategoriesPath = path.join(process.cwd(), "public/images/categories");
-    const imgProductsPath = path.join(process.cwd(), "public/images/products");
 
-    // Проверка существования файлов
-    if (!fs.existsSync(dbPath)) throw new Error("Database file not found");
+    // Проверка существования файла БД
+    if (!fs.existsSync(dbPath)) {
+      throw new Error("Database file not found");
+    }
 
     // Создание архива
     const archive = archiver("zip", {
@@ -39,24 +39,11 @@ export default async function handler(req, res) {
     // Подключаем архив к ответу
     archive.pipe(res);
 
-    // Добавление БД в архив с явным указанием типа
+    // Добавляем только БД в архив
     archive.file(dbPath, {
       name: "database.sqlite",
-      store: true, // гарантирует сохранение без сжатия (лучше для бинарных)
+      store: true, // гарантирует сохранение без сжатия (лучше для SQLite)
     });
-
-    // Добавление изображений
-    if (fs.existsSync(imgCategoriesPath)) {
-      archive.directory(imgCategoriesPath, "images/categories", {
-        store: true, // без сжатия для изображений
-      });
-    }
-
-    if (fs.existsSync(imgProductsPath)) {
-      archive.directory(imgProductsPath, "images/products", {
-        store: true, // без сжатия для изображений
-      });
-    }
 
     // Финализация архива
     await archive.finalize();
