@@ -1,6 +1,29 @@
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require("@prisma/client");
+const { createCanvas } = require("canvas");
+
+function generateRandomImage() {
+  const width = 300;
+  const height = 300;
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+
+  // Генерация случайного цвета RGB
+  const r = Math.floor(Math.random() * 256);
+  const g = Math.floor(Math.random() * 256);
+  const b = Math.floor(Math.random() * 256);
+
+  // Заливка холста случайным цветом
+  ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+  ctx.fillRect(0, 0, width, height);
+
+  // Конвертация в JPEG и кодирование в base64
+  const buffer = canvas.toBuffer("image/jpeg");
+  const base64 = buffer.toString("base64");
+
+  return `data:image/jpeg;base64,${base64}`;
+}
 
 const USER_ROLES = Object.freeze({
   ADMIN: "ADMIN",
@@ -148,7 +171,7 @@ async function main() {
   // Категории
   for (const { name, slug } of CATEGORIES) {
     if (!(await prisma.category.findUnique({ where: { slug } }))) {
-      await prisma.category.create({ data: { name, slug } });
+      await prisma.category.create({ data: { name, slug, img: generateRandomImage() } });
       logToConsole(`Категория "${name}" создана`);
     }
   }
@@ -193,7 +216,7 @@ async function main() {
         name: template.name,
         price: template.price,
         count: Math.floor(Math.random() * 100),
-        // img: `https://example.com/img/${template.article}.jpg`,
+        img: generateRandomImage(),
         categories: { connect: categories.map((c) => ({ id: c.id })) },
         engine: template.engine
           ? {
