@@ -37,6 +37,35 @@ const getCartSession = async (req, res) => {
   };
 };
 
+// Функция для получения полных данных корзины
+async function getFullCartData(cart) {
+  if (cart.length === 0) return [];
+
+  const productIds = cart.map((item) => item.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      count: true,
+    },
+  });
+
+  return cart.reduce((result, item) => {
+    const product = products.find((p) => p.id === item.productId);
+    if (product) {
+      result.push({
+        ...item,
+        name: product.name,
+        price: product.price,
+        availableCount: product.count,
+      });
+    }
+    return result;
+  }, []);
+}
+
 // Вспомогательные функции
 async function getOrCreateCustomer(customerData, tx) {
   // Валидация данных клиента
@@ -112,7 +141,7 @@ export default async function handler(req, res) {
   const session = await getCartSession(req, res);
 
   try {
-    const cart = await session.getCart();
+    const cart = session.getCart();
     const { customer: customerData } = req.body;
 
     // Валидация корзины
@@ -120,8 +149,28 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Корзина пуста" });
     }
 
+    // Получаем актуальные данные о товарах
+    const fullCart = await getFullCartData(cart);
+
+    // Проверка наличия всех товаров
+    if (fullCart.length !== cart.length) {
+      const missingIds = cart
+        .filter((item) => !fullCart.some((p) => p.productId === item.productId))
+        .map((item) => item.productId);
+      return res.status(400).json({ error: `Товары не найдены: ${missingIds.join(", ")}` });
+    }
+
+    // Проверка остатков
+    const insufficientStock = fullCart.filter((item) => item.quantity > item.availableCount);
+    if (insufficientStock.length > 0) {
+      const errors = insufficientStock.map(
+        (item) => `${item.name}: доступно ${item.availableCount}, запрошено ${item.quantity}`
+      );
+      return res.status(400).json({ error: "Недостаточно товаров в наличии", details: errors });
+    }
+
     // Рассчет общей суммы
-    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = fullCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     // Создание заказа в транзакции
     const order = await prisma.$transaction(async (tx) => {
@@ -132,7 +181,7 @@ export default async function handler(req, res) {
       const orderData = {
         customerId: customer.id,
         status: "NEW",
-        products: cart.map((item) => ({
+        products: fullCart.map((item) => ({
           productId: item.productId,
           count: item.quantity,
           price: item.price,
@@ -191,7 +240,7 @@ export default async function handler(req, res) {
       customer: {
         id: order.customer.id,
         email: order.customer.email,
-        name: `${order.customer.firstname} ${order.customer.lastname}`.trim(),
+        name: `${order.customer.firstname || ""} ${order.customer.lastname || ""}`.trim(),
       },
       products: order.products.map((p) => ({
         id: p.product.id,

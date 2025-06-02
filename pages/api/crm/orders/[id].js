@@ -144,76 +144,70 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "PUT") {
-      try {
-        const data = req.body;
-
-        const transaction = await prisma.$transaction(async (tx) => {
-          // 1. Получаем текущую заявку
-          const oldOrder = await tx.order.findUnique({
-            where: { id: data.id },
-            include: { products: true },
-          });
-
-          // 2. Восстанавливаем остатки для старого состояния
-          if (oldOrder.status !== "CANCELLED") {
-            await Promise.all(
-              oldOrder.products.map((item) =>
-                tx.product.update({
-                  where: { id: item.productId },
-                  data: { count: { increment: item.count } },
-                })
-              )
-            );
-          }
-
-          // 3. Обновляем заявку
-          const updatedOrder = await tx.order.update({
-            where: { id: data.id },
-            data: {
-              status: data.status,
-              products: {
-                deleteMany: {},
-                create: data.products.map((p) => ({
-                  productId: p.productId,
-                  count: p.count,
-                })),
-              },
-            },
-            include: { products: true },
-          });
-
-          // 4. Обновляем остатки для нового состояния
-          if (data.status === "CANCELLED") {
-            // Возвращаем все товары при отмене
-            await Promise.all(
-              oldOrder.products.map((item) =>
-                tx.product.update({
-                  where: { id: item.productId },
-                  data: { count: { increment: item.count } },
-                })
-              )
-            );
-          } else if (oldOrder.status === "CANCELLED") {
-            // Вычитаем товары при восстановлении из отмены
-            await Promise.all(
-              data.products.map((item) =>
-                tx.product.update({
-                  where: { id: item.productId },
-                  data: { count: { decrement: item.count } },
-                })
-              )
-            );
-          }
-          return updatedOrder;
+      const data = req.body;
+      const transaction = await prisma.$transaction(async (tx) => {
+        // 1. Получаем текущую заявку
+        const oldOrder = await tx.order.findUnique({
+          where: { id: data.id },
+          include: { products: true },
         });
 
-        return res.status(200).json({ data: transaction });
-      } catch (error) {
-        console.error("Order update error:", error);
-        return res.status(500).json({ error: "Внутренняя ошибка сервера" });
-      }
-    }
+        // 2. Восстанавливаем остатки только для неотмененных заказов
+        if (oldOrder.status !== "CANCELLED") {
+          await Promise.all(
+            oldOrder.products.map((item) =>
+              tx.product.update({
+                where: { id: item.productId },
+                data: { count: { increment: item.count } },
+              })
+            )
+          );
+        }
 
+        // 3. Обновляем заявку
+        const updatedOrder = await tx.order.update({
+          where: { id: data.id },
+          data: {
+            status: data.status,
+            products: {
+              deleteMany: {},
+              create: data.products.map((p) => ({
+                productId: p.productId,
+                count: p.count,
+              })),
+            },
+          },
+          include: { products: true },
+        });
+
+        // 4. Для новых активных заказов вычитаем остатки
+        if (data.status !== "CANCELLED") {
+          // Проверка доступности товаров
+          for (const item of data.products) {
+            const product = await tx.product.findUnique({
+              where: { id: item.productId },
+            });
+            if (product.count < item.count) {
+              throw new Error(`Недостаточно товара ${product.name} (остаток: ${product.count})`);
+            }
+          }
+
+          // Вычитаем остатки
+          await Promise.all(
+            data.products.map((item) =>
+              tx.product.update({
+                where: { id: item.productId },
+                data: { count: { decrement: item.count } },
+              })
+            )
+          );
+        }
+
+        return updatedOrder;
+      });
+
+      return res.status(200).json({ data: transaction });
+    }
     return res.status(405).json({ error: "Метод не разрешен" });
   } catch (error) {
     console.error("Order API error:", error);
