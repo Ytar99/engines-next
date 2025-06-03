@@ -22,14 +22,14 @@ const contactInfo = [
     icon: <LocationOn fontSize="large" />,
     title: "Основной склад",
     details: "г. Благовещенск, микрорайон КПП, Кольцевая улица, 39/1",
-    additional: "3 этаж",
+    additional: "303 офис, 3 этаж",
   },
   {
     icon: <Phone fontSize="large" />,
     title: "Телефоны",
     details: [
-      { label: "Отдел продаж", value: "+7 (812) 123-45-67" },
-      { label: "Сервисный центр", value: "+7 (812) 765-43-21" },
+      { label: "Отдел продаж", value: "+7 (914) 578-52-02" },
+      { label: "Сервисный центр", value: "+7 (924) 448-27-28" },
     ],
   },
   {
@@ -44,9 +44,8 @@ const contactInfo = [
     icon: <Schedule fontSize="large" />,
     title: "Режим работы",
     details: [
-      { label: "Пн-Пт", value: "9:00 - 18:00" },
-      { label: "Сб", value: "10:00 - 15:00" },
-      { label: "Вс", value: "Выходной" },
+      { label: "Пн-Пт", value: "9:00 - 17:00" },
+      { label: "Сб-Вс", value: "Выходной" },
     ],
   },
 ];
@@ -190,7 +189,7 @@ export default function ContactsPage() {
                   <ListItemIcon sx={{ minWidth: 32 }}>
                     <LocationOn fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText primary="Парковка" secondary="Бесплатная парковка на территории для клиентов" />
+                  <ListItemText primary="Парковка" secondary="Бесплатная парковка для клиентов" />
                 </ListItem>
                 <ListItem disableGutters>
                   <ListItemIcon sx={{ minWidth: 32 }}>

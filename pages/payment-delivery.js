@@ -29,7 +29,7 @@ const paymentMethods = [
   {
     icon: <CreditCard fontSize="large" />,
     title: "Банковской картой",
-    details: "Visa, Mastercard, Мир - онлайн оплата при оформлении заказа",
+    details: "Visa, Mastercard, Мир - оплата после оформления заказа",
   },
   {
     icon: <AccountBalanceWallet fontSize="large" />,
@@ -49,21 +49,21 @@ const deliveryOptions = [
     title: "Курьерская доставка",
     time: "1-3 дня",
     price: "от 300 ₽",
-    area: "По всему СЗФО",
+    area: "По всему ДВО",
   },
   {
     icon: <LocationOn fontSize="large" />,
     title: "Самовывоз",
     time: "Сегодня",
     price: "Бесплатно",
-    area: "Наш склад в Санкт-Петербурге",
+    area: "Наш склад в Благовещенске",
   },
   {
     icon: <Schedule fontSize="large" />,
     title: "Экспресс-доставка",
     time: "24 часа",
     price: "от 1500 ₽",
-    area: "В пределах СПб",
+    area: "В пределах Благовещенска",
   },
 ];
 

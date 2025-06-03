@@ -19,12 +19,12 @@ import {
 import { Schedule, Warning, AccessTime, CalendarToday } from "@mui/icons-material";
 
 const schedule = [
-  { day: "Понедельник", time: "9:00 - 18:00" },
-  { day: "Вторник", time: "9:00 - 18:00" },
-  { day: "Среда", time: "9:00 - 18:00" },
-  { day: "Четверг", time: "9:00 - 18:00" },
-  { day: "Пятница", time: "9:00 - 18:00" },
-  { day: "Суббота", time: "10:00 - 15:00" },
+  { day: "Понедельник", time: "9:00 - 17:00" },
+  { day: "Вторник", time: "9:00 - 17:00" },
+  { day: "Среда", time: "9:00 - 17:00" },
+  { day: "Четверг", time: "9:00 - 17:00" },
+  { day: "Пятница", time: "9:00 - 17:00" },
+  { day: "Суббота", time: "Выходной" },
   { day: "Воскресенье", time: "Выходной" },
 ];
 
@@ -172,7 +172,7 @@ export default function WorkingHoursPage() {
                   <Typography variant="body2" color="text.secondary">
                     Рекомендуем уточнять время работы по телефону:
                     <Box component="span" sx={{ ml: 1, fontWeight: 500, color: "primary.main" }}>
-                      +7 (4162) 123-456
+                      +7 (914) 578-52-02
                     </Box>
                   </Typography>
                 </Box>

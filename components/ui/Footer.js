@@ -47,9 +47,10 @@ function Footer() {
             <Typography variant="h6" gutterBottom>
               Контакты
             </Typography>
-            <Typography variant="body2">Телефон: +7 (XXX) XXX-XX-XX</Typography>
+            <Typography variant="body2">Отдел продаж: +7 (914) 578-52-02</Typography>
+            <Typography variant="body2">Сервисный центр: +7 (924) 448-27-28</Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>
-              Email: example@domain.com
+              Email: support@autodvs.ru
             </Typography>
           </Box>
 
