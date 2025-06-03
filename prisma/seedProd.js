@@ -171,7 +171,13 @@ async function main() {
   // Категории
   for (const { name, slug } of CATEGORIES) {
     if (!(await prisma.category.findUnique({ where: { slug } }))) {
-      await prisma.category.create({ data: { name, slug, img: generateRandomImage() } });
+      await prisma.category.create({
+        data: {
+          name,
+          slug,
+          // img: generateRandomImage()
+        },
+      });
       logToConsole(`Категория "${name}" создана`);
     }
   }
@@ -216,7 +222,7 @@ async function main() {
         name: template.name,
         price: template.price,
         count: Math.floor(Math.random() * 100),
-        img: generateRandomImage(),
+        // img: generateRandomImage(),
         categories: { connect: categories.map((c) => ({ id: c.id })) },
         engine: template.engine
           ? {
