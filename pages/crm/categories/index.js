@@ -75,7 +75,7 @@ const CategoriesPage = () => {
         pagination={rows.pagination}
         loading={rows.loading}
         getEditUrl={(id) => `/crm/categories/${id}/edit`}
-        onPageChange={rows.setPage}
+        onPageChange={(newPage) => rows.setPage(newPage + 1)}
         onRowsPerPageChange={rows.setLimit}
         onDelete={setSelectedForDelete}
         // additionalActions={[
