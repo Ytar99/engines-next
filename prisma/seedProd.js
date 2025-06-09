@@ -2,7 +2,6 @@ require("dotenv").config();
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require("@prisma/client");
 const { createCanvas } = require("canvas");
-const { STATUS_OPTIONS_ARRAY } = require("@/lib/constants/order");
 
 function generateRandomImage() {
   const width = 300;
@@ -153,6 +152,8 @@ PRODUCT_TEMPLATES.forEach((template) => {
   template.categories.unshift("all");
 });
 
+const ORDER_STATUS = ["NEW", "PROCESSING", "COMPLETED", "CANCELLED", "SHIPPED"];
+
 async function main() {
   // Администратор
   const adminData = {
@@ -258,7 +259,7 @@ async function main() {
     const order = await prisma.order.create({
       data: {
         customerId: customers[Math.floor(Math.random() * customers.length)].id,
-        status: STATUS_OPTIONS_ARRAY[Math.floor(Math.random() * STATUS_OPTIONS_ARRAY.length)],
+        status: ORDER_STATUS[Math.floor(Math.random() * ORDER_STATUS.length)],
       },
     });
     logToConsole(`Заявка #${order.id} создана`);
@@ -277,13 +278,17 @@ async function main() {
     }
 
     for (const product of selectedProducts) {
-      await prisma.orderProduct.create({
-        data: {
-          orderId: order.id,
-          productId: product.id,
-          count: Math.floor(Math.random() * 5) + 1,
-        },
-      });
+      try {
+        await prisma.orderProduct.create({
+          data: {
+            orderId: order.id,
+            productId: product.id,
+            count: Math.floor(Math.random() * 5) + 1,
+          },
+        });
+      } catch (e) {
+        logToConsole("Ошибка при добавлении товара в заявку", "error");
+      }
     }
     logToConsole(`Добавлено ${count} товаров в заявку #${order.id}`);
   }
