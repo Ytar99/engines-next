@@ -22,7 +22,7 @@ export default function DashboardPage() {
         ]);
 
         const processedOrders = ordersRes.map((item) => ({
-          name: STATUS_OPTIONS_OBJ[item.status] || item.status,
+          name: STATUS_OPTIONS_OBJ[item.status]?.label || item.status,
           value: item.count,
         }));
 

@@ -157,9 +157,9 @@ export default function OrderStatusPage() {
                   Заявка #{order.id}
                 </Typography>
                 <Chip
-                  label={STATUS_OPTIONS_OBJ[order.status].label}
-                  color={STATUS_OPTIONS_OBJ[order.status].color}
-                  icon={STATUS_OPTIONS_OBJ[order.status].icon}
+                  label={STATUS_OPTIONS_OBJ[order.status]?.label || order.status}
+                  color={STATUS_OPTIONS_OBJ[order.status]?.color || "default"}
+                  icon={STATUS_OPTIONS_OBJ[order.status]?.icon || null}
                   sx={{ mb: 2 }}
                 />
                 <Typography variant="body2" color="text.secondary">

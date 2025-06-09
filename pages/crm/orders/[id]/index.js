@@ -22,7 +22,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import prisma from "@/lib/prisma";
 import { formatDate, formatCurrency, formatPhone } from "@/lib/utils/formatter";
-import { STATUS_COLORS, STATUS_OPTIONS_OBJ } from "@/lib/constants/order";
+import { STATUS_OPTIONS_OBJ } from "@/lib/constants/order";
 import { useParams } from "next/navigation";
 
 export default function OrderDetailsPage({ orderData }) {
@@ -83,8 +83,8 @@ export default function OrderDetailsPage({ orderData }) {
                   </Typography>
                   <Chip
                     size="small"
-                    label={STATUS_OPTIONS_OBJ[orderData.status] || orderData.status}
-                    color={STATUS_COLORS[orderData.status] || "default"}
+                    label={STATUS_OPTIONS_OBJ[orderData.status]?.label || orderData.status}
+                    color={STATUS_OPTIONS_OBJ[orderData.status]?.color || "default"}
                   />
                 </Box>
 

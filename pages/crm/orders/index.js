@@ -10,7 +10,7 @@ import { Add as AddIcon, Info as InfoIcon } from "@mui/icons-material";
 import { useFetchForTable } from "@/lib/hooks/useFetchForTable";
 import orderService from "@/lib/api/orderService";
 import { useEntity } from "@/lib/hooks/useEntity";
-import { STATUS_OPTIONS, STATUS_COLORS, STATUS_OPTIONS_OBJ } from "@/lib/constants/order";
+import { STATUS_OPTIONS, STATUS_OPTIONS_OBJ } from "@/lib/constants/order";
 import { formatCurrency, formatPhone } from "@/lib/utils/formatter";
 
 const initialFilters = {
@@ -108,7 +108,7 @@ const OrdersPage = () => {
         render: (value) => (
           <Chip
             size="small"
-            label={STATUS_OPTIONS_OBJ[value] || value}
+            label={STATUS_OPTIONS_OBJ[value]?.label || value}
             color={STATUS_OPTIONS_OBJ[value]?.color || "default"}
             sx={{ width: "100%" }}
           />

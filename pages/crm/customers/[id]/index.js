@@ -23,7 +23,7 @@ import CrmLayout from "@/components/layouts/CrmLayout";
 import prisma from "@/lib/prisma";
 import { formatDate, formatPhone } from "@/lib/utils/formatter";
 import { useCustomerOrders } from "@/lib/hooks/useCustomerOrder";
-import { STATUS_COLORS, STATUS_OPTIONS_OBJ } from "@/lib/constants/order";
+import { STATUS_OPTIONS_OBJ } from "@/lib/constants/order";
 
 export default function CustomerDetailsPage({ customerData }) {
   const router = useRouter();
@@ -138,8 +138,8 @@ export default function CustomerDetailsPage({ customerData }) {
                         <TableCell>
                           <Chip
                             size="small"
-                            label={STATUS_OPTIONS_OBJ[order.status] || order.status}
-                            color={STATUS_COLORS[order.status] || "default"}
+                            label={STATUS_OPTIONS_OBJ[order.status]?.label || order.status}
+                            color={STATUS_OPTIONS_OBJ[order.status]?.color || "default"}
                             sx={{ width: "100%" }}
                           />
                         </TableCell>
