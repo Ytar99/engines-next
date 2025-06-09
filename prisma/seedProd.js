@@ -2,6 +2,7 @@ require("dotenv").config();
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require("@prisma/client");
 const { createCanvas } = require("canvas");
+const { STATUS_OPTIONS_ARRAY } = require("@/lib/constants/order");
 
 function generateRandomImage() {
   const width = 300;
@@ -252,13 +253,12 @@ async function main() {
 
   // Заявки
   const customers = await prisma.customer.findMany();
-  const statuses = ["COMPLETED", "PROCESSING", "CANCELLED"];
 
   for (let i = 0; i < 15; i++) {
     const order = await prisma.order.create({
       data: {
         customerId: customers[Math.floor(Math.random() * customers.length)].id,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
+        status: STATUS_OPTIONS_ARRAY[Math.floor(Math.random() * STATUS_OPTIONS_ARRAY.length)],
       },
     });
     logToConsole(`Заявка #${order.id} создана`);

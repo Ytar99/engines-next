@@ -109,7 +109,7 @@ const OrdersPage = () => {
           <Chip
             size="small"
             label={STATUS_OPTIONS_OBJ[value] || value}
-            color={STATUS_COLORS[value] || "default"}
+            color={STATUS_OPTIONS_OBJ[value]?.color || "default"}
             sx={{ width: "100%" }}
           />
         ),

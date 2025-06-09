@@ -25,6 +25,7 @@ import { useAllProducts } from "@/lib/hooks/useAllProducts";
 import { validateOrder } from "@/lib/utils/validation";
 import prisma from "@/lib/prisma";
 import { toast } from "react-toastify";
+import { STATUS_OPTIONS } from "@/lib/constants/order";
 
 export default function EditOrderPage({ initialOrder }) {
   const router = useRouter();
@@ -179,11 +180,11 @@ export default function EditOrderPage({ initialOrder }) {
                     }
                     disabled={formState.isCancelled}
                   >
-                    <MenuItem value="NEW">Новый</MenuItem>
-                    <MenuItem value="PROCESSING">В обработке</MenuItem>
-                    <MenuItem value="SHIPPED">Отправлен</MenuItem>
-                    <MenuItem value="COMPLETED">Завершён</MenuItem>
-                    <MenuItem value="CANCELLED">Отменён</MenuItem>
+                    {STATUS_OPTIONS.map((option) => (
+                      <MenuItem key={`status-${option.value}`} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>

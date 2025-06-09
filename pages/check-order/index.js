@@ -15,20 +15,10 @@ import {
   Chip,
   Box,
 } from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import QueryBuilderIcon from "@mui/icons-material/QueryBuilder";
-import ErrorIcon from "@mui/icons-material/Error";
-import HistoryToggleOffIcon from "@mui/icons-material/HistoryToggleOff";
 import catalogService from "@/lib/api/catalogService";
 import Image from "next/image";
 import PublicLayout from "@/components/layouts/PublicLayout";
-
-const statusConfig = {
-  NEW: { color: "info", label: "На рассмотрении", icon: <HistoryToggleOffIcon /> },
-  PROCESSING: { color: "warning", label: "В обработке", icon: <QueryBuilderIcon /> },
-  COMPLETED: { color: "success", label: "Завершен", icon: <CheckCircleIcon /> },
-  CANCELLED: { color: "error", label: "Отменен", icon: <ErrorIcon /> },
-};
+import { STATUS_OPTIONS_OBJ } from "@/lib/constants/order";
 
 export default function OrderStatusPage() {
   const router = useRouter();
@@ -167,9 +157,9 @@ export default function OrderStatusPage() {
                   Заявка #{order.id}
                 </Typography>
                 <Chip
-                  label={statusConfig[order.status].label}
-                  color={statusConfig[order.status].color}
-                  icon={statusConfig[order.status].icon}
+                  label={STATUS_OPTIONS_OBJ[order.status].label}
+                  color={STATUS_OPTIONS_OBJ[order.status].color}
+                  icon={STATUS_OPTIONS_OBJ[order.status].icon}
                   sx={{ mb: 2 }}
                 />
                 <Typography variant="body2" color="text.secondary">
