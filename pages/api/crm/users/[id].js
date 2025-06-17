@@ -66,7 +66,7 @@ export default async function handler(req, res) {
 
       // Хеширование пароля при наличии
       if (password) {
-        updateData.password = await bcrypt.hash(password, 12);
+        updateData.password = await bcrypt.hash(password, 10);
       }
 
       const updatedUser = await prisma.user.update({

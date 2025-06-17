@@ -99,7 +99,7 @@ export default async function handler(req, res) {
       }
 
       // Хеширование пароля
-      const hashedPassword = await bcrypt.hash(password, 12);
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       // Создание пользователя
       const newUser = await prisma.user.create({

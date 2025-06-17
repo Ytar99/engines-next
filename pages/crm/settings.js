@@ -16,6 +16,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { toast } from "react-toastify";
 import CrmLayout from "@/components/layouts/CrmLayout";
 import SettingsService from "@/lib/api/settingsService";
+import AuditLogTable from "@/components/crm/AuditLogTable";
 
 export default function SettingsPage() {
   const [file, setFile] = useState(null);
@@ -26,8 +27,6 @@ export default function SettingsPage() {
     setIsExporting(true);
     try {
       const response = await SettingsService.exportBackup();
-
-      // Создаем ссылку для скачивания
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement("a");
       link.href = url;
@@ -35,7 +34,6 @@ export default function SettingsPage() {
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
-
       toast.success("Экспорт данных успешно завершен");
     } catch (error) {
       toast.error(`Ошибка экспорта: ${error.message}`);
@@ -128,6 +126,11 @@ export default function SettingsPage() {
                 </Button>
               </CardContent>
             </Card>
+          </Grid>
+
+          {/* Используем вынесенный компонент журнала аудита */}
+          <Grid item xs={12}>
+            <AuditLogTable />
           </Grid>
         </Grid>
       </Box>
